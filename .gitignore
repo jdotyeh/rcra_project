@@ -1,0 +1,57 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# R
+.Rhistory
+.Rapp.history
+.RData
+.RDataTmp
+.Ruserdata
+*.Rproj.user/
+.Rproj.user/
+*-Ex.R
+/*.tar.gz
+/*.Rcheck/
+.Rd2pdf*
+vignettes/*.pdf
+.httr-oauth
+*_cache/
+/cache/
+*.utf8.md
+*.knit.md
+rsconnect/
+.Renviron
+
+# R Markdown / Quarto rendered output
+*.html
+*_files/
+/_site/
+/site_libs/
+/.quarto/
+
+# Large files
+*.zip
+*.tar
+*.gz
+*.7z
+*.rar
+*.parquet
+*.feather
+*.rds
+*.rda
+*.sqlite
+*.sqlite3
+*.db
+*.csv.gz
+data/raw/
