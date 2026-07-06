@@ -1,4 +1,4 @@
-# README for "RCRA Project" (rcra_project)
+# Resource Conservation and Recovery Act (RCRA) Regulatory Infrastructure
 
 ## Overview
 
