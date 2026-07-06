@@ -41,6 +41,9 @@ rsconnect/
 /.quarto/
 
 # Large files
+data/echo_rcra/
+data/rcrainfo/
+data/echo_rcra_pipeline/
 *.zip
 *.tar
 *.gz
