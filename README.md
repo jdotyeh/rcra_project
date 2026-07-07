@@ -70,7 +70,13 @@ Each `data/rcrainfo/<module>/` folder also contains EPA's `METADATA.txt` (record
   - `rvest` (1.0.5)
   - `xml2` (1.4.0)
   - `jsonlite` (2.0.0)
+  - `tidyverse` (2.0.0)
+  - `lubridate` (1.9.4)
+  - `openxlsx2` (1.25)
 - An internet connection is required: all data are downloaded at run time.
+- Optional: `googledrive` / `googlesheets4`, only if mirroring the summary
+  workbooks to Google Sheets (set `RCRA_PUSH_GSHEET=true`; requires a one-time
+  interactive Drive login). Skipped by default.
 
 ### Controlled Randomness
 
@@ -82,7 +88,7 @@ Each `data/rcrainfo/<module>/` folder also contains EPA's `METADATA.txt` (record
 
 Approximate time needed to reproduce the analyses on a standard (2026) desktop machine:
 
-- [x] 10-60 minutes (fast connection) to 1-2 hours (slower connection); dominated by ~4.5 GB of downloads
+- [x] 10-60 minutes (fast connection) to 1-2 hours (slower connection); dominated by ~4.5 GB of downloads. The summary-table stage adds about 3 minutes.
 
 #### Summary of required storage space
 
@@ -94,7 +100,7 @@ Memory requirements are minimal: files are streamed to disk and appended in chun
 
 #### Computational Details
 
-The code was last run on an **Apple M3 Pro laptop (18 GB RAM) with macOS 26.5.2** on 2026-07-06.
+The code was last run on an **Apple M3 Pro laptop (18 GB RAM) with macOS 26.5.2** on 2026-07-07.
 
 ## Description of programs/code
 
@@ -103,7 +109,11 @@ The code was last run on an **Apple M3 Pro laptop (18 GB RAM) with macOS 26.5.2*
   - `01_download_data.R` - downloads the zip file(s), unzips them into the module's `data/` folder, deletes the zips, and (where applicable) renames files and appends numbered part files into one CSV per table.
   - `02_scrape_data_dictionary.R` - scrapes the EPA documentation page(s) for that dataset and writes markdown data dictionaries (and READ ME files) next to the data.
 - Modules: `echo_rcra_pipeline` (ECHO RCRA pipeline), `echo_rcra` (ECHO RCRAInfo extract), `rcrainfo` (HWIP CSV exports for all RCRAInfo modules).
-- Output data folders are created automatically and are excluded from version control via `.gitignore`.
+- Programs in `code/modules/02_summary_tables/rcrainfo/` build one "`<Module>` Summary Tables.xlsx" workbook per RCRAInfo module (variable-level summaries of the central table: categorical frequencies, quantitative ranges, and Y/N indicators) under `output/summary_tables/`:
+  - `00_engine.R` - the shared engine (`build_module_summary()`); sourced by the other scripts, it computes the summaries and writes the workbook in a fixed house format. Running it on its own only defines functions.
+  - `01_hd_reporting.R` - `07_wt_notices_imports.R` - one config per module: Handler (`HD_REPORTING`), CME (`CE_REPORTING`), Corrective Action (`CA_EVENT`), Permitting (`PM_EVENT`), Financial Assurance (`FA_COST_ESTIMATE`), and WIETS exports/imports (`WT_NOTICES_*`).
+  - `08_br_reporting_2001.R` - `19_br_reporting_2023.R` - one config per Biennial Report cycle (`BR_REPORTING_2001`-`2023`).
+- Output data folders are created automatically; raw data folders are excluded from version control via `.gitignore`, while the summary workbooks in `output/` are committed.
 
 ### License for Code
 
@@ -111,14 +121,14 @@ The code is licensed under the terms in `LICENSE`.
 
 ## Instructions to Replicators
 
-1. Install R (4.4.2 or later) and the packages listed above, e.g. `install.packages(c("rvest", "xml2", "jsonlite"))`.
+1. Install R (4.4.2 or later) and the packages listed above, e.g. `install.packages(c("rvest", "xml2", "jsonlite", "tidyverse", "lubridate", "openxlsx2"))`.
 2. From the repository root, run:
 
    ```sh
    Rscript code/master.R
    ```
 
-3. All datasets and data dictionaries appear under `data/`. Individual module scripts can also be run on their own (from the repository root), e.g. `Rscript code/modules/01_download/rcrainfo/01_download_data.R`.
+3. All datasets and data dictionaries appear under `data/`; the summary-table workbooks appear under `output/summary_tables/`. Individual module scripts can also be run on their own (from the repository root), e.g. `Rscript code/modules/01_download/rcrainfo/01_download_data.R`.
 
 Note: because EPA refreshes these data weekly, downloaded files will reflect the current release, not necessarily the vintage documented above.
 
