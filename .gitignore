@@ -40,6 +40,12 @@ rsconnect/
 /site_libs/
 /.quarto/
 
+# The "*_files/" rule above (Quarto/Rmd render output) also matches the source
+# directory code/modules/03_modular_master_files/. Re-include its R scripts.
+!code/modules/03_modular_master_files/
+!code/modules/03_modular_master_files/rcrainfo/
+!code/modules/03_modular_master_files/rcrainfo/*.R
+
 # Large files
 data/echo_rcra/
 data/rcrainfo/
