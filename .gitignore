@@ -50,6 +50,13 @@ rsconnect/
 data/echo_rcra/
 data/rcrainfo/
 data/echo_rcra_pipeline/
+data/tri/
+data/nei/
+data/dmr/
+data/ghgrp/
+data/egrid/
+data/frs/
+output/panels/
 *.zip
 *.tar
 *.gz
