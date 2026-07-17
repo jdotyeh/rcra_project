@@ -1,59 +1,104 @@
 # Utilities
 
 Helper scripts that support the project but are **not** part of the replication
-pipeline.
+pipeline. `code/master.R` does not run anything in this folder.
 
-## `br_summary_to_gdoc.R` — paste Biennial Report summary tables into the Google Doc
+## `summary_tables_to_html.R`
 
-Rebuilds the tables from `output/summary_tables/Biennial Report <year> Summary
-Tables.xlsx` (all three tabs: Categorical, Quantitative, Dummy) as rich HTML in
-the workbook's house format (fills, merged variable blocks, gray descriptions,
-borders, alignment, note blocks) and puts the result on the macOS clipboard.
-Pasting into Google Docs then produces real, formatted Docs tables.
+Compiles the summary-table workbooks in `output/summary_tables/` into two
+standalone HTML files that live alongside them.
 
-Target: **2026 RCRA Project** doc → *Biennial Report Module* → *BR Summary
-Tables* tab. Years are separated by Heading-3 year lines (Georgia 14 bold).
+- `Modular Summary Tables.html` gathers the seven module workbooks (Handler,
+  CME, Corrective Action, Permitting, Financial Assurance, and the WIETS
+  exports and imports modules).
+- `Biennial Report Summary Tables.html` gathers the twelve Biennial Report
+  cycles from 2001 through 2023.
+
+Every sheet of every workbook (Categorical, Quantitative, Dummy) is rebuilt as
+an HTML table that mirrors the workbook's house format, so the fills, merged
+variable blocks, gray descriptions, borders, alignment, and trailing note
+blocks all carry over. Each file opens with a table of contents whose links
+jump straight to a workbook or to one of its individual tables, and every
+heading carries a "back to top" link. A floating button in the corner returns
+to the top from anywhere on the page.
 
 ### How to run
 
-Run in Terminal (or the RStudio *Terminal* pane — not the R console), from the
-repo root.
-
-**Several years in one paste** (`--with-headers` inserts the Heading-3 year
-line before each year's tables — use when the year headers don't exist in the
-Doc yet):
+Run from the repository root after the workbooks have been built by
+`code/modules/04_summary_tables/`.
 
 ```sh
-cd ~/GitHub/rcra_project
-Rscript code/utils/br_summary_to_gdoc.R --with-headers 2023 2021 2019 2017 2015 2013 2011 2009 2007 2005 2003 2001
+Rscript code/utils/summary_tables_to_html.R
 ```
 
-Then, in the Doc: press **Cmd+Down** to jump to the end of the tab and press
-**Cmd+V** once.
-
-**One year, under an existing year header** (tables only):
+With no argument the script writes both files. Pass `modular` or `br` to build
+only one of them.
 
 ```sh
-Rscript code/utils/br_summary_to_gdoc.R 2023
+Rscript code/utils/summary_tables_to_html.R br
 ```
 
-Then click the blank line under that year's header and press **Cmd+V**.
+### Notes
 
-From the R console instead:
+- The workbooks must already exist in `output/summary_tables/`. A workbook that
+  is missing is reported and skipped rather than treated as an error.
+- The only dependency is `openxlsx2`. The output is self-contained HTML with
+  inline styles, so it opens in any browser without other files.
 
-```r
-setwd("~/GitHub/rcra_project")
-system('Rscript code/utils/br_summary_to_gdoc.R --with-headers 2023 2021')
+## `build_site.R`
+
+Assembles the public-facing project website into a top-level `docs/` folder,
+built entirely from artifacts the pipeline already produces so that it never
+drifts from a separately maintained copy. GitHub Pages can serve the folder
+directly, and because every page is self-contained it also opens by
+double-clicking `docs/index.html`.
+
+The build writes four things.
+
+- `docs/index.html` is the front door, an overview of the project with its
+  four-stage pipeline, its nine EPA data sources, and a link to each output.
+- `docs/state-reporting.html` is a searchable state-by-state reference of how
+  hazardous-waste reporting works, rendered from `resources/table.md` and
+  regenerated to match however many states that file currently covers.
+- `docs/summary-tables/` receives the two compiled summary-table pages
+  (`modular.html` and `biennial-report.html`), copied in from
+  `output/summary_tables/` so that GitHub Pages can serve them.
+- `docs/assets/site.css` is the one shared stylesheet, a clean institutional
+  design that pairs a serif display face with a sans-serif body. The body text
+  is loaded as a webfont when the reader is online and falls back to system
+  fonts otherwise.
+
+The footer carries a horizontal UVA Batten School monogram as the site's
+identity. It is drawn inline as an SVG lockup in the script, so an official
+brand asset can be dropped in there if one is preferred.
+
+Like the script above, this one is not part of the replication pipeline and adds
+no dependency beyond base R, so `code/master.R` never runs it.
+
+### How to run
+
+Run from the repository root after the summary-table workbooks and their
+compiled pages (built by `summary_tables_to_html.R`) already exist.
+
+```sh
+Rscript code/utils/build_site.R
 ```
 
-### Notes and gotchas
+With no argument the script builds the whole site. Pass `state` to rebuild only
+the state-reporting page while you are editing `resources/table.md`, or `index`
+to rebuild only the front page.
 
-- macOS only: the clipboard is set through `osascript` (`«class HTML»` flavor).
-- Requires `openxlsx2`; the workbooks must already exist in
-  `output/summary_tables/` (built by `code/modules/02_summary_tables/`).
-- Before pasting, make sure the cursor sits on a plain paragraph (toolbar shows
-  "Normal text"). Pasting while the cursor is inside a table cell nests the
-  whole year inside that table — if that happens, Cmd+Z and paste again from a
-  plain paragraph. Cmd+Down (end of tab) is the safest landing spot.
-- Dates are kept on one line (`white-space:nowrap`, 100 px date columns);
-  the `%` column keeps one decimal, matching the workbook's `0.0` format.
+### Publishing
+
+Enable GitHub Pages on the default branch with the `/docs` folder as the source.
+The site then serves at `https://<user>.github.io/rcra_project/`. Nothing else is
+required, and no continuous-integration workflow is involved.
+
+### Notes
+
+- The two summary-table pages are copied in when present. A page that is missing
+  is reported and skipped, so the rest of the site still builds.
+- The state-reporting page adapts to `resources/table.md` as it grows, so
+  finishing the remaining states needs no change to the script.
+- The pages carry inline links to the repository and its README, so a reader can
+  move from the overview straight to the code and the replication instructions.

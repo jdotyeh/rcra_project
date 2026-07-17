@@ -1,3 +1,15 @@
+# =============================================================================
+# FILE:     01_download_data.R
+# PURPOSE:  Download the EPA ECHO RCRA pipeline dataset archive, unzip it, rename
+#           the tables to PIPELINE_* names, and convert the bundled read me.
+# INPUTS:   https://echo.epa.gov/files/echodownloads/pipeline_rcra_downloads.zip
+# OUTPUTS:  data/echo_rcra_pipeline/PIPELINE_*.csv,
+#           data/echo_rcra_pipeline/PIPELINE_READ_ME.md
+# AUTHOR:   Jason Ye
+# CREATED:  2026-07-06
+# UPDATED:  2026-07-06
+# =============================================================================
+
 # Download EPA ECHO RCRA pipeline data and unzip it into data/echo_rcra_pipeline.
 # Source: https://echo.epa.gov/tools/data-downloads
 # Run from the repo root.

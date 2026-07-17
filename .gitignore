@@ -35,28 +35,53 @@ rsconnect/
 
 # R Markdown / Quarto rendered output
 *.html
+# except the compiled summary-table pages (code/utils/summary_tables_to_html.R),
+# committed alongside the summary workbooks.
+!output/summary_tables/*.html
 *_files/
 /_site/
 /site_libs/
 /.quarto/
 
 # The "*_files/" rule above (Quarto/Rmd render output) also matches the source
-# directory code/modules/03_modular_master_files/. Re-include its R scripts.
-!code/modules/03_modular_master_files/
-!code/modules/03_modular_master_files/rcrainfo/
-!code/modules/03_modular_master_files/rcrainfo/*.R
+# directory code/modules/02_modular_master_files/. Re-include its contents.
+!code/modules/02_modular_master_files/
+!code/modules/02_modular_master_files/rcrainfo/
+!code/modules/02_modular_master_files/README.md
+!code/modules/02_modular_master_files/rcrainfo/*.R
+!code/modules/02_modular_master_files/rcrainfo/README.md
+
+# The "*_files/" rule also matches output/modular_master_files/. Re-include the
+# folder and its README, but keep the large master CSVs out of version control.
+!output/modular_master_files/
+!output/modular_master_files/README.md
+output/modular_master_files/*.csv
 
 # Large files
-data/echo_rcra/
-data/rcrainfo/
-data/echo_rcra_pipeline/
-data/tri/
-data/nei/
-data/dmr/
-data/ghgrp/
-data/egrid/
-data/frs/
-output/panels/
+# Ignore the bulk raw data but keep each folder's hand-written README so the
+# documentation travels with the repository.
+data/echo_rcra/*
+!data/echo_rcra/README.md
+data/rcrainfo/*
+!data/rcrainfo/README.md
+data/echo_rcra_pipeline/*
+!data/echo_rcra_pipeline/README.md
+data/tri/*
+!data/tri/README.md
+data/nei/*
+!data/nei/README.md
+data/dmr/*
+!data/dmr/README.md
+data/ghgrp/*
+!data/ghgrp/README.md
+data/egrid/*
+!data/egrid/README.md
+data/frs/*
+!data/frs/README.md
+# Panel outputs: keep the small BR panels, the summaries, and all panel READMEs,
+# but drop the large compliance and enforcement panel CSVs. The .rds panel files
+# are excluded by the global "*.rds" rule below.
+output/panels/CE_PANEL_2015_2023/*.csv
 *.zip
 *.tar
 *.gz
@@ -71,3 +96,8 @@ output/panels/
 *.db
 *.csv.gz
 data/raw/
+
+# Public project site (built by code/utils/build_site.R, published from /docs by
+# GitHub Pages). Re-included past the "*.html" rule above so the pages commit.
+!docs/
+!docs/**

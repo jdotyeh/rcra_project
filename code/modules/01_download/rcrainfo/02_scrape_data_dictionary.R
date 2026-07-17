@@ -1,3 +1,15 @@
+# =============================================================================
+# FILE:     02_scrape_data_dictionary.R
+# PURPOSE:  Scrape the RCRAInfo Public Data Element Dictionary help pages into a
+#           markdown data dictionary for each module, saved beside the data.
+# INPUTS:   RCRAInfo DED help site
+#           (https://rcrainfo.epa.gov/rcrainfo-help/application/publicHelp/)
+# OUTPUTS:  data/rcrainfo/<module>/<MODULE>_DATA_DICTIONARY.md
+# AUTHOR:   Jason Ye
+# CREATED:  2026-07-06
+# UPDATED:  2026-07-06
+# =============================================================================
+
 # Scrape the RCRAInfo Public Data Element Dictionary (DED) help pages and
 # save one markdown dictionary per module folder, next to the module's data:
 # data/rcrainfo/ce/CE_DATA_DICTIONARY.md, data/rcrainfo/br/..., etc.

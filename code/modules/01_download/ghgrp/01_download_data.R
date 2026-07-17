@@ -1,3 +1,17 @@
+# =============================================================================
+# FILE:     01_download_data.R
+# PURPOSE:  Download GHGRP data from two sources: EPA bulk summary and subpart
+#           workbooks, and Envirofacts subpart emission tables pulled in chunks.
+# INPUTS:   EPA bulk files (https://www.epa.gov/system/files/); Envirofacts REST
+#           API (https://data.epa.gov/efservice/);
+#           code/modules/01_download/ghgrp/all_ghgrp_tables_years.csv
+# OUTPUTS:  data/ghgrp/ (data_summaries/, subpart workbooks,
+#           tables/<year>/<TABLE>.csv)
+# AUTHOR:   Jason Ye
+# CREATED:  2026-07-10
+# UPDATED:  2026-07-10
+# =============================================================================
+
 # Download EPA Greenhouse Gas Reporting Program (GHGRP) data into data/ghgrp.
 #
 # Two source types, matching standardizedinventories/stewi/GHGRP.py (Option A):

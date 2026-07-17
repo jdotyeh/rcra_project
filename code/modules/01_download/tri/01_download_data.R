@@ -1,3 +1,15 @@
+# =============================================================================
+# FILE:     01_download_data.R
+# PURPOSE:  Download TRI Basic Plus national archives and unzip them, one folder
+#           per reporting year. Files are kept raw and renamed by content tag.
+# INPUTS:   EPA TRI Basic Plus per-year zips
+#           (https://www.epa.gov/system/files/other-files/<YYYY-MM>/us_<year>.zip)
+# OUTPUTS:  data/tri/<year>/TRI_*.txt
+# AUTHOR:   Jason Ye
+# CREATED:  2026-07-10
+# UPDATED:  2026-07-10
+# =============================================================================
+
 # Download EPA Toxics Release Inventory (TRI) Basic Plus national data files and
 # unzip them into data/tri, one folder per reporting year.
 #

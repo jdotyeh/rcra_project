@@ -5,9 +5,9 @@
 The code in this package builds a facility-level research infrastructure around hazardous waste regulation under the Resource Conservation and Recovery Act (RCRA). It has four stages, run in order by one master script:
 
 1. **Download** (`01_download`): downloads and documents hazardous waste compliance and enforcement data from two EPA platforms — ECHO (Enforcement and Compliance History Online) and RCRAInfo (via the Hazardous Waste Information Platform, HWIP) — plus five supplementary EPA facility-level environmental datasets: the Toxics Release Inventory (TRI), the National Emissions Inventory (NEI), the Greenhouse Gas Reporting Program (GHGRP), the Emissions & Generation Resource Integrated Database (eGRID), and Discharge Monitoring Report (DMR) loadings. Each RCRA module also scrapes the corresponding EPA data dictionary.
-2. **Summary tables** (`02_summary_tables`): variable-level summary workbooks for the central table of each RCRAInfo module.
-3. **Modular master files** (`03_modular_master_files`): one analysis-ready master CSV per RCRAInfo module (Handler, CME, Corrective Action, Permitting, Financial Assurance, WIETS exports/imports), joining each module's central table with its dimension tables.
-4. **Panels** (`04_panels`): facility panels built from the master files and the Biennial Report — a balanced and an unbalanced facility-cycle panel of LQG/TSDF facilities (2015–2023) and a facility-month compliance-evaluation panel (2015–2023) — each linked to EPA Facility Registry Service (FRS) IDs.
+2. **Modular master files** (`02_modular_master_files`): one analysis-ready master CSV per RCRAInfo module (Handler, CME, Corrective Action, Permitting, Financial Assurance, WIETS exports/imports), joining each module's central table with its dimension tables.
+3. **Panels** (`03_panels`): facility panels built from the master files and the Biennial Report — a balanced and an unbalanced facility-cycle panel of LQG/TSDF facilities (2015–2023), a facility-month compliance-evaluation panel (2015–2023), and a facility-month enforcement-action panel (2015–2023) — each linked to EPA Facility Registry Service (FRS) IDs.
+4. **Summary tables** (`04_summary_tables`): variable-level summary workbooks for the central table of each RCRAInfo module and each Biennial Report cycle.
 
 The replicator should expect the download stage to run for roughly 2–4 hours on a fast connection (see the DMR note below: that module alone is rate-limited by EPA and completes only over several resumed runs), the processing stages (2–4) to add roughly 1–2 hours, and the package to use about 60 GB of disk space.
 
@@ -111,8 +111,9 @@ Data folder: `data/frs/`
 | `data/dmr/<year>/DMR_*.csv` | EPA (2026i) | Per-state annual loads + N/P variants, 2014-2023 | No (downloaded by code; multi-day, resumable) |
 | `data/frs/FRS_PROGRAM_LINKS.csv` | EPA (2026j) | FRS program-ID cross-reference | No (**manual download**, see source 9) |
 | `output/modular_master_files/<MOD>_MASTER.csv` | derived | 7 RCRAInfo module master files (~4 GB) | No (rebuilt by code) |
-| `output/panels/*.csv`, `output/panels/summary/*` | derived | BR balanced/unbalanced panels, CE panel, panel summaries | Panels are small and versioned with the repo |
-| `output/summary_tables/*.xlsx` | derived | 19 module/BR-cycle summary workbooks | Yes (committed) |
+| `output/panels/BR_PANEL_*`, `output/panels/summary/*` | derived | BR balanced/unbalanced facility-cycle panels and panel summaries | Yes (small, committed) |
+| `output/panels/CE_PANEL_2015_2023/*` | derived | Facility-month evaluation and enforcement panels | No (large, rebuilt by code) |
+| `output/summary_tables/*.xlsx` | derived | 19 module/BR-cycle summary workbooks (compiled to `*.html` by `code/utils/summary_tables_to_html.R`) | Yes (committed) |
 
 Each `data/rcrainfo/<module>/` folder also contains EPA's `METADATA.txt` (record counts) and a scraped `<MODULE>_DATA_DICTIONARY.md`. Each supplementary data folder (`data/tri/`, `data/nei/`, `data/ghgrp/`, `data/egrid/`, `data/dmr/`) contains a `README.md` documenting its files.
 
@@ -128,9 +129,6 @@ Each `data/rcrainfo/<module>/` folder also contains EPA's `METADATA.txt` (record
   - `lubridate` (1.9.4)
   - `openxlsx2` (1.25)
 - An internet connection is required: all data (except the manual FRS file) are downloaded at run time.
-- Optional: `googledrive` / `googlesheets4`, only if mirroring the summary
-  workbooks to Google Sheets (set `RCRA_PUSH_GSHEET=true`; requires a one-time
-  interactive Drive login). Skipped by default.
 
 ### Controlled Randomness
 
@@ -159,23 +157,28 @@ The code was last run on an **Apple M3 Pro laptop (18 GB RAM) with macOS 26.5.2*
 
 ## Description of programs/code
 
-- `code/master.R` runs every module script in order. It discovers all `.R` files under `code/modules/` and sources them in alphabetical path order (stage `01_download` through `04_panels`), each in its own environment.
+- `code/master.R` runs every module script in order. It discovers all `.R` files under `code/modules/` and sources them in alphabetical path order, each in its own environment, so `00_setup` (install and load packages, create the output folders) runs first and stages `01_download` through `04_summary_tables` follow. It skips the `build_panels.R` shortcut described below so the panels are not built twice.
 - Programs in `code/modules/01_download/` download the raw data and, for the RCRA sources, scrape the data dictionaries:
   - `echo_rcra/`, `echo_rcra_pipeline/`, `rcrainfo/` — `01_download_data.R` downloads the zip file(s), unzips into the module's `data/` folder, deletes the zips, and (where applicable) renames files and appends numbered part files into one CSV per table; `02_scrape_data_dictionary.R` scrapes the EPA documentation page(s) and writes markdown data dictionaries (and READ ME files) next to the data.
   - `tri/`, `nei/`, `ghgrp/`, `egrid/`, `dmr/` — one `01_download_data.R` each, porting the download step of EPA's StEWI package (`standardizedinventories`) to R against the current EPA endpoints. Helper inputs are vendored next to the scripts (`dmr/state_codes.csv`, `ghgrp/all_ghgrp_tables_years.csv`). Each writes a raw, unparsed copy of the source files with standardized names; the DMR script self-throttles and resumes (see source 8).
-- Programs in `code/modules/02_summary_tables/rcrainfo/` build one "`<Module>` Summary Tables.xlsx" workbook per RCRAInfo module (variable-level summaries of the central table: categorical frequencies, quantitative ranges, and Y/N indicators) under `output/summary_tables/`:
-  - `00_engine.R` — the shared engine (`build_module_summary()`); sourced by the other scripts, it computes the summaries and writes the workbook in a fixed house format. Running it on its own only defines functions.
+- Programs in `code/modules/02_modular_master_files/rcrainfo/` (`01_hd_master.R` - `07_wt_imports_master.R`) build one master CSV per RCRAInfo module under `output/modular_master_files/`: the module's central table joined with its dimension tables (one row per source record x dimension combination, all columns read as character so identifiers and date stamps survive verbatim).
+- Programs in `code/modules/03_panels/rcrainfo/` build the facility panels under `output/panels/` (all link `FRS_ID` from the manual FRS file):
+  - `01_panel_2015_2023_balanced.R` — balanced facility-cycle panel (`BR_PANEL_2015_2023_BALANCED.csv`) of handlers recognized in the Biennial Report as LQG and/or TSDF in **all five** cycles 2015-2023; Biennial Report status/tonnage columns plus duration-dominant handler attributes and a same-year conflict audit column from `HD_MASTER`.
+  - `01_panel_2015_2023_balanced_summary.R` — descriptive summaries of the balanced panel (numeric and categorical), written to `output/panels/summary/` as CSVs and a two-sheet workbook.
+  - `02_panel_eval_2015_2023.R` — balanced facility-month panel (`CE_PANEL_2015_2023.csv`) of RCRA compliance evaluations from `CE_MASTER`, months 2015-01 - 2023-12, with per-month evaluation counts by type, violation indicators, the responsible person and state-prefixed suborganization codes (e.g. `IL-CD`), citizen-complaint, multimedia, sampling, and not-Subtitle-C attribute indicators, and the latest evaluation change stamp.
+  - `03_panel_2015_2023_unbalanced.R` — unbalanced counterpart of the balanced panel (`BR_PANEL_2015_2023_UNBALANCED.csv`): every handler recognized as LQG and/or TSDF in **at least one** cycle, one row per qualifying cycle; a strict superset built by the same rules.
+  - `04_panel_enf_2015_2023.R` — balanced facility-month panel (`ENF_PANEL_2015_2023.csv`) of RCRA enforcement actions from `CE_MASTER`, months 2015-01 - 2023-12, with per-month action counts split by issuing agency (state vs federal), the nationally-defined and undefined enforcement-type codes, and the docket, attorney, responsible-person, state-prefixed suborganization (e.g. `IL-CD`), disposition, and CA/FO fields.
+  - `build_panels.R` — shortcut that builds only the panels end to end: setup, the RCRAInfo download if the raw inputs are missing, the `HD_MASTER` and `CE_MASTER` master files if they are missing, then the four panels. Stops early if the manual FRS file is absent. Excluded from `master.R` so a full run does not build the panels twice.
+- Programs in `code/modules/04_summary_tables/rcrainfo/` build one "`<Module>` Summary Tables.xlsx" workbook per RCRAInfo module (variable-level summaries of the central table: categorical frequencies, quantitative ranges, and Y/N indicators) under `output/summary_tables/`:
+  - `00_function.R` — the shared engine (`build_module_summary()`); sourced by the other scripts, it computes the summaries and writes the workbook in a fixed house format. Running it on its own only defines functions.
   - `01_hd_reporting.R` - `07_wt_notices_imports.R` — one config per module: Handler (`HD_REPORTING`), CME (`CE_REPORTING`), Corrective Action (`CA_EVENT`), Permitting (`PM_EVENT`), Financial Assurance (`FA_COST_ESTIMATE`), and WIETS exports/imports (`WT_NOTICES_*`).
   - `08_br_reporting_2001.R` - `19_br_reporting_2023.R` — one config per Biennial Report cycle (`BR_REPORTING_2001`-`2023`).
-- Programs in `code/modules/03_modular_master_files/rcrainfo/` (`01_hd_master.R` - `07_wt_imports_master.R`) build one master CSV per RCRAInfo module under `output/modular_master_files/`: the module's central table joined with its dimension tables (one row per source record x dimension combination, all columns read as character so identifiers and date stamps survive verbatim).
-- Programs in `code/modules/04_panels/rcrainfo/` build the facility panels under `output/panels/` (all link `FRS_ID` from the manual FRS file):
-  - `01_panel_2015_2023_balanced.R` — balanced facility-cycle panel (`BR_PANEL_2015_2023_BALANCED.csv`) of handlers recognized in the National Biennial Report as LQG and/or TSDF in **all five** cycles 2015-2023; Biennial Report status/tonnage columns plus duration-dominant handler attributes and a same-year conflict audit column from `HD_MASTER`.
-  - `01_panel_2015_2023_balanced_summary.R` — descriptive summaries of the balanced panel (numeric and categorical), written to `output/panels/summary/` as CSVs and a two-sheet workbook.
-  - `02_panel_eval_2015_2023.R` — balanced facility-month panel (`CE_PANEL_2015_2023.csv`) of RCRA compliance evaluations from `CE_MASTER`, months 2015-01 - 2023-12, with per-month evaluation counts by type and violation indicators.
-  - `03_panel_2015_2023_unbalanced.R` — unbalanced counterpart of the balanced panel (`BR_PANEL_2015_2023_UNBALANCED.csv`): every handler recognized as LQG and/or TSDF in **at least one** cycle, one row per qualifying cycle; a strict superset built by the same rules.
-- `code/utils/br_summary_paste.R` — convenience utility (not part of the pipeline): rebuilds a Biennial Report summary workbook as rich HTML on the macOS clipboard for pasting into Google Docs.
+- `code/utils/summary_tables_to_html.R` — convenience utility (not part of the pipeline): compiles the summary-table workbooks into two standalone HTML files under `output/summary_tables/` (`Modular Summary Tables.html` and `Biennial Report Summary Tables.html`), each with a linked table of contents; see `code/utils/README.md`.
+- `code/utils/build_site.R` — convenience utility (not part of the pipeline): assembles a minimalist public-facing website under `docs/` from artifacts already in the repository — a project overview, a searchable state-by-state RCRA reporting reference (rendered from `resources/table.md`), and the two compiled summary-table pages — designed to be served by GitHub Pages from the `/docs` folder while remaining openable by double-clicking `docs/index.html`; see `code/utils/README.md`.
+- `docs/institutional/` — institutional briefs on the hazardous waste program, an overview plus one brief per topic, written so the program rules behind the data are documented in one place. Where a rule shapes the data, the relevant module or data README points to the brief.
 - `resources/` — reference documents (not used by the code): EPA RCRA notification/reporting forms (`epa_forms/`) and RCRAInfo module structure charts (`rcrainfo_modular_structure_charts/`).
 - Output folders are created automatically; raw data folders are excluded from version control via `.gitignore`, while summary workbooks and the BR panels in `output/` are committed.
+- Every code module and most data and output folders carry their own README, so a reader can start from any folder and understand what it holds and how it is built.
 
 ### License for Code
 
@@ -191,7 +194,7 @@ The code is licensed under the terms in `LICENSE`.
    Rscript code/master.R
    ```
 
-4. All datasets and data dictionaries appear under `data/`; summary workbooks under `output/summary_tables/`; module master files under `output/modular_master_files/`; panels under `output/panels/`. Individual module scripts can also be run on their own (from the repository root), e.g. `Rscript code/modules/01_download/rcrainfo/01_download_data.R`.
+4. All datasets and data dictionaries appear under `data/`; summary workbooks under `output/summary_tables/`; module master files under `output/modular_master_files/`; panels under `output/panels/`. Individual module scripts can also be run on their own (from the repository root), e.g. `Rscript code/modules/01_download/rcrainfo/01_download_data.R`. To build only the panels without running the whole pipeline, run `Rscript code/modules/03_panels/rcrainfo/build_panels.R`, which runs setup, the RCRAInfo download if its raw inputs are missing, the required master files, and then the panels.
 5. If the run ends with DMR reporting that it was throttled, re-run `Rscript code/modules/01_download/dmr/01_download_data.R` on later days until it reports done; completed files are skipped (see source 8).
 
 Note: because EPA refreshes these data on rolling schedules, downloaded files will reflect the current release, not necessarily the vintage documented above.

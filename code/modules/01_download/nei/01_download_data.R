@@ -1,3 +1,14 @@
+# =============================================================================
+# FILE:     01_download_data.R
+# PURPOSE:  Download NEI point-source emission extracts as EPA-staged Parquet
+#           files, one folder per reporting year, kept raw.
+# INPUTS:   EPA ORD Data Commons S3 bucket (StEWI NEI Data Files; URLs in-script)
+# OUTPUTS:  data/nei/<year>/NEI_POINT_<i>.parquet
+# AUTHOR:   Jason Ye
+# CREATED:  2026-07-10
+# UPDATED:  2026-07-10
+# =============================================================================
+
 # Download EPA National Emissions Inventory (NEI) point-source data into data/nei,
 # one folder per reporting year.
 #

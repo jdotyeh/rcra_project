@@ -1,3 +1,14 @@
+# =============================================================================
+# FILE:     02_scrape_data_dictionary.R
+# PURPOSE:  Scrape the ECHO RCRAInfo download-summary page into a markdown data
+#           dictionary and a markdown copy of the bundled read me.
+# INPUTS:   https://echo.epa.gov/tools/data-downloads/rcrainfo-download-summary
+# OUTPUTS:  data/echo_rcra/RCRA_DATA_DICTIONARY.md, data/echo_rcra/RCRA_READ_ME.md
+# AUTHOR:   Jason Ye
+# CREATED:  2026-07-06
+# UPDATED:  2026-07-06
+# =============================================================================
+
 # Scrape the RCRAInfo download summary page from EPA ECHO:
 #   - the "RCRAInfo Description" section is saved as RCRA_READ_ME.md
 #   - everything else (guidance, file structure tables, code lookups, and the

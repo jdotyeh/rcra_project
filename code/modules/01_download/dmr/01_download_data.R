@@ -1,3 +1,16 @@
+# =============================================================================
+# FILE:     01_download_data.R
+# PURPOSE:  Download EPA DMR annual pollutant-loading data from the ECHO Loading
+#           Tool REST API, one folder per reporting year. Self-throttles and
+#           resumes across days when the API rate limit is hit.
+# INPUTS:   ECHO Loading Tool REST API (dmr_rest_services.get_custom_data_annual);
+#           code/modules/01_download/dmr/state_codes.csv
+# OUTPUTS:  data/dmr/<year>/DMR_*.csv and data/dmr/DMR_POLLUTANTS.csv
+# AUTHOR:   Jason Ye
+# CREATED:  2026-07-10
+# UPDATED:  2026-07-10
+# =============================================================================
+
 # Download EPA Discharge Monitoring Report (DMR) annual pollutant-loading data
 # into data/dmr, one folder per reporting year.
 #

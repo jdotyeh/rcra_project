@@ -1,3 +1,14 @@
+# =============================================================================
+# FILE:     01_download_data.R
+# PURPOSE:  Download the EPA ECHO RCRAInfo dataset archive and unzip it, keeping
+#           the CSV tables for hazardous-waste sites.
+# INPUTS:   https://echo.epa.gov/files/echodownloads/rcra_downloads.zip
+# OUTPUTS:  data/echo_rcra/*.csv
+# AUTHOR:   Jason Ye
+# CREATED:  2026-07-06
+# UPDATED:  2026-07-06
+# =============================================================================
+
 # Download EPA ECHO RCRAInfo data and unzip it into data/echo_rcra.
 # Source: https://echo.epa.gov/tools/data-downloads
 # Run from the repo root.

@@ -1,3 +1,14 @@
+# =============================================================================
+# FILE:     01_download_data.R
+# PURPOSE:  Download eGRID plant-level workbooks, one xlsx per available year,
+#           extracting the 2014 and 2016 books from EPA's historical archive zip.
+# INPUTS:   EPA eGRID page and historical-archive zip (per-year URLs in-script)
+# OUTPUTS:  data/egrid/EGRID_PLANT_<year>.xlsx
+# AUTHOR:   Jason Ye
+# CREATED:  2026-07-10
+# UPDATED:  2026-07-10
+# =============================================================================
+
 # Download EPA Emissions & Generation Resource Integrated Database (eGRID) data
 # workbooks into data/egrid, one .xlsx per available year.
 #

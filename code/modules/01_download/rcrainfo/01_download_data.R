@@ -1,3 +1,15 @@
+# =============================================================================
+# FILE:     01_download_data.R
+# PURPOSE:  Download every RCRAInfo CSV export from the HWIP API, unzip each
+#           archive, append any numbered part files into one CSV per table, and
+#           store the result under one lower-case folder per module.
+# INPUTS:   HWIP API (https://rcrapublic.epa.gov/rcra-hwip/api/)
+# OUTPUTS:  data/rcrainfo/<module>/*.csv (br, ca, ce, em, fa, hd, pm, wt)
+# AUTHOR:   Jason Ye
+# CREATED:  2026-07-06
+# UPDATED:  2026-07-06
+# =============================================================================
+
 # Download all RCRAInfo CSV exports from the EPA Hazardous Waste Information
 # Platform (HWIP) and store them under data/rcrainfo, one folder per module
 # (lower case): br, ca, ce, em, fa, hd, pm, wt.

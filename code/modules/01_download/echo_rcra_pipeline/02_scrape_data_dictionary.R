@@ -1,3 +1,14 @@
+# =============================================================================
+# FILE:     02_scrape_data_dictionary.R
+# PURPOSE:  Scrape the ECHO RCRA pipeline download-summary page into a markdown
+#           data dictionary next to the data.
+# INPUTS:   https://echo.epa.gov/tools/data-downloads/rcra-pipeline-download-summary
+# OUTPUTS:  data/echo_rcra_pipeline/PIPELINE_DATA_DICTIONARY.md
+# AUTHOR:   Jason Ye
+# CREATED:  2026-07-06
+# UPDATED:  2026-07-06
+# =============================================================================
+
 # Scrape the RCRA pipeline data dictionary from the EPA ECHO summary page
 # and save it as a markdown file in data/echo_rcra_pipeline.
 # Source: https://echo.epa.gov/tools/data-downloads/rcra-pipeline-download-summary

@@ -1,18 +1,40 @@
-# Master script: run every module in order.
+# =============================================================================
+# FILE:     master.R
+# PURPOSE:  Run the whole project end to end. Discovers every script under
+#           code/modules/ and sources them in path order, so the four numbered
+#           stages run one after another with setup first.
+# INPUTS:   all scripts under code/modules/ (00_setup through 04_summary_tables)
+# OUTPUTS:  none of its own; each sourced script writes its own outputs under
+#           data/ and output/
+# AUTHOR:   Jason Ye
+# CREATED:  2026-07-06
+# UPDATED:  2026-07-07
+# =============================================================================
 #
-# Modules live under code/modules/<stage>/<module>/, e.g.
-#   01_download/echo_rcra              - EPA ECHO RCRAInfo dataset + data dictionary
-#   01_download/echo_rcra_pipeline     - EPA ECHO RCRA pipeline dataset + data dictionary
-#   01_download/rcrainfo               - RCRAInfo CSV exports + data dictionaries
-#   02_summary_tables/rcrainfo         - per-module "Summary Tables" workbooks
-#                                        written to output/summary_tables/
+# Modules live under code/modules/<stage>/<module>/. Sorting the discovered
+# paths alphabetically gives the intended run order:
+#   00_setup                 - install and load packages, create output folders
+#   01_download/<source>     - download the raw EPA data and scrape dictionaries
+#   02_modular_master_files  - one analysis-ready master CSV per RCRAInfo module
+#   03_panels                - facility panels built from the master files
+#   04_summary_tables        - per-module and per-cycle summary workbooks
 #
-# Scripts run in alphabetical path order (stage, module, then 01, 02, ...),
-# each in its own environment so they don't interfere.
-# Run from the repo root. Downloads several GB, so this takes a while.
+# 00_setup sorts first, so packages and folders are ready before any stage runs.
+# Helper scripts under code/utils/ are intentionally not discovered here; they
+# are convenience tools, not part of the pipeline (see code/utils/README.md).
+#
+# Each script runs in its own environment so they cannot interfere with one
+# another. Run from the repository root. The download stage pulls tens of GB, so
+# a full pass takes hours; the DMR download is rate-limited by EPA and resumes
+# over several days without blocking the rest of the run.
 
 scripts <- sort(list.files("code/modules",
                            pattern = "\\.R$", full.names = TRUE, recursive = TRUE))
+
+# build_panels.R is a standalone shortcut that re-runs the panel subset on its
+# own. The full pipeline already builds the panels through the numbered stages,
+# so exclude the orchestrator here to avoid doing that work twice.
+scripts <- scripts[!grepl("/build_panels\\.R$", scripts)]
 
 for (s in scripts) {
   cat("\n========", s, "========\n")
