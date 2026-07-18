@@ -23,7 +23,7 @@
 # tables that mirror the .xlsx house format (fills, merged variable blocks, gray
 # descriptions, borders, alignment, note blocks). Every file opens with a table
 # of contents whose links jump straight to a workbook or to one of its tables,
-# and every heading carries a "back to top" link (plus a floating button).
+# and every heading carries a "Back to top" button.
 #
 # Usage (from the repo root):
 #   Rscript code/utils/summary_tables_to_html.R            # both files
@@ -55,7 +55,7 @@ parse_range <- function(r) {
        c2 = col_letter_to_num(m[4]), r2 = as.integer(m[5]))
 }
 
-BASE <- "border:1px solid #000000;font-size:12pt;vertical-align:middle;padding:2px 5px;"
+BASE <- "border:1px solid #000000;color:#000000;font-size:12pt;vertical-align:middle;padding:2px 5px;"
 
 # render a cell matrix (with merges) as one bordered HTML table
 render_table <- function(v, rows, ncols, widths, fills, aligns, cellfun, merges) {
@@ -161,7 +161,7 @@ slug <- function(s) {
   gsub("^-+|-+$", "", s)
 }
 
-BACKLINK <- ' <a class="toplink" href="#top">back to top'
+BACKLINK <- ' <a class="toplink" href="#top">Back to top</a>'
 
 # one workbook -> its TOC entry, its body section, and its tab count
 workbook_section <- function(path, label) {
@@ -214,16 +214,14 @@ nav.toc h2 { margin:0 0 10px; font-family:var(--serif); font-weight:600; font-si
 nav.toc a { color:var(--navy); text-decoration:none; }
 nav.toc a:hover { color:var(--orange); text-decoration:underline; }
 section.mod { padding-top:8px; margin-top:26px; border-top:1px solid var(--line); }
-.mod-title { font-family:var(--serif); font-weight:600; font-size:21px; margin:16px 0 4px; }
-.tab-title { font-family:var(--serif); font-weight:600; font-size:15.5px; margin:18px 0 6px; color:var(--navy); }
-.toplink { font-family:var(--sans); font-size:12px; font-weight:400; margin-left:12px;
-           color:var(--faint); text-decoration:none; }
-.toplink:hover { color:var(--orange); text-decoration:underline; }
-.tablewrap { overflow-x:auto; padding:2px 0 6px; }
-#backtop { position:fixed; right:22px; bottom:22px; background:var(--navy); color:#fff;
-           padding:9px 15px; border-radius:20px; font-family:var(--sans); font-size:13px;
-           text-decoration:none; box-shadow:0 2px 8px rgba(0,0,0,.22); }
-#backtop:hover { background:var(--orange); }'
+.mod-title { font-family:var(--serif); font-weight:600; font-size:22px; margin:16px 0 4px; }
+.tab-title { font-family:var(--serif); font-weight:600; font-size:19px; margin:20px 0 8px; color:var(--navy); }
+.toplink { display:inline-block; font-family:var(--sans); font-size:11px; font-weight:600;
+           letter-spacing:.06em; text-transform:uppercase; margin-left:12px; padding:4px 11px;
+           background:#e9eef6; color:var(--navy); border-radius:4px; text-decoration:none;
+           vertical-align:middle; }
+.toplink:hover { background:#dbe4f2; color:var(--navy); }
+.tablewrap { overflow-x:auto; padding:2px 0 6px; }'
 
 LEGEND <-
   '<p class="legend">Each table is colour-coded as in the source workbook:
@@ -278,7 +276,6 @@ build_page <- function(title, subtitle, items, out_file) {
     '</ol>',
     '</nav>',
     paste(vapply(secs, function(s) s$body, ""), collapse = "\n"),
-    '<a id="backtop" href="#top">back to top',
     '</body>',
     '</html>')
 

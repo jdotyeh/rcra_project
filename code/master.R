@@ -25,8 +25,8 @@
 #
 # Each script runs in its own environment so they cannot interfere with one
 # another. Run from the repository root. The download stage pulls tens of GB, so
-# a full pass takes hours; the DMR download is rate-limited by EPA and resumes
-# over several days without blocking the rest of the run.
+# a full pass takes hours. Supplementary-inventory download scripts under
+# code/diagnostics/ are also not discovered here (see code/diagnostics/README.md).
 
 scripts <- sort(list.files("code/modules",
                            pattern = "\\.R$", full.names = TRUE, recursive = TRUE))

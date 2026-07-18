@@ -4,7 +4,7 @@
 #           workbooks, and Envirofacts subpart emission tables pulled in chunks.
 # INPUTS:   EPA bulk files (https://www.epa.gov/system/files/); Envirofacts REST
 #           API (https://data.epa.gov/efservice/);
-#           code/modules/01_download/ghgrp/all_ghgrp_tables_years.csv
+#           code/diagnostics/ghgrp/all_ghgrp_tables_years.csv
 # OUTPUTS:  data/ghgrp/ (data_summaries/, subpart workbooks,
 #           tables/<year>/<TABLE>.csv)
 # AUTHOR:   Jason Ye
@@ -37,35 +37,44 @@
 # (annual summary spreadsheets), GHGRP_CEMS.xlsx, and GHGRP_FLUORINATED.xlsx.
 # The Envirofacts subpart tables keep their EPA table names (already indicative).
 
+# Load xml2 to parse the Envirofacts row-count responses.
 library(xml2)
 
+# Set the output folders, the folder holding the vendored table list, and the years.
 out_dir     <- "data/ghgrp"
 tables_root <- file.path(out_dir, "tables")
-this_dir    <- "code/modules/01_download/ghgrp"
+this_dir    <- "code/diagnostics/ghgrp"
 years       <- 2011:2023
 
+# Allow up to 1 hour per download and create the output folder.
 options(timeout = 3600)
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
 # ---- 1. Bulk files ----------------------------------------------------------
+# List the bulk sources: the annual summary zip and two subpart workbooks.
 file_base    <- "https://www.epa.gov/system/files/"
 summaries_zip <- "other-files/2024-10/2023_data_summary_spreadsheets.zip"
 bulk_xlsx     <- c("GHGRP_CEMS"        = "other-files/2024-10/e_s_cems_bb_cc_ll_full_data_set.xlsx",
                    "GHGRP_FLUORINATED" = "other-files/2024-10/l_o_freq_request_data.xlsx")
 
+# Download and unpack the annual data summary spreadsheets.
 cat("[GHGRP] data summary spreadsheets (zip)\n")
 zip_path <- file.path(out_dir, basename(summaries_zip))
 tryCatch({
+  # Download the zip and extract it into data_summaries/.
   download.file(paste0(file_base, summaries_zip), zip_path, mode = "wb", quiet = TRUE)
   unzip(zip_path, exdir = file.path(out_dir, "data_summaries"))
+  # Rename each ghgp_data_<year>.xlsx to GHGRP_SUMMARY_<year>.xlsx.
   for (fp in list.files(file.path(out_dir, "data_summaries"),
                         pattern = "^ghgp_data_\\d{4}\\.xlsx$", full.names = TRUE)) {
     yr <- sub("^ghgp_data_(\\d{4})\\.xlsx$", "\\1", basename(fp))
     file.rename(fp, file.path(dirname(fp), sprintf("GHGRP_SUMMARY_%s.xlsx", yr)))
   }
+  # Remove the zip after extraction.
   invisible(file.remove(zip_path))
 }, error = function(e) cat("  failed:", conditionMessage(e), "\n"))
 
+# Download the two subpart workbooks under their RCRAInfo-style names.
 for (nm in names(bulk_xlsx)) {
   cat("[GHGRP]", nm, "\n")
   tryCatch(download.file(paste0(file_base, bulk_xlsx[[nm]]),
@@ -74,22 +83,29 @@ for (nm in names(bulk_xlsx)) {
 }
 
 # ---- 2. Envirofacts subpart emissions tables --------------------------------
+# Set the Envirofacts REST API base.
 enviro_base <- "https://data.epa.gov/efservice/"
 
 # Append a downloaded chunk CSV onto the table file, keeping the header only from
 # the first chunk. Returns number of data rows written.
 append_chunk <- function(chunk_path, out_file, first) {
+  # Read the chunk lines.
   con <- file(chunk_path, "rt"); lines <- readLines(con, warn = FALSE); close(con)
+  # Skip empty chunks.
   if (!length(lines)) return(0L)
-  if (first) writeLines(lines, out_file)                 # header + data
+  if (first) writeLines(lines, out_file)                 # write header + data
   else if (length(lines) > 1) {
-    oc <- file(out_file, "at"); writeLines(lines[-1], oc); close(oc)  # data only
+    oc <- file(out_file, "at"); writeLines(lines[-1], oc); close(oc)  # append data only
   }
+  # Return the number of data rows written.
   max(length(lines) - 1L, 0L)
 }
 
+# Ask the API how many rows a table has for a year; return NA on any failure.
 count_rows <- function(table, year) {
+  # Build the COUNT query URL.
   url <- sprintf("%s%s/REPORTING_YEAR/=/%s/COUNT", enviro_base, table, year)
+  # Parse the XML response and pull the record count out of it.
   n <- tryCatch({
     doc  <- read_xml(url)
     node <- xml_find_first(doc, ".//REQUESTRECORDCOUNT")
@@ -98,45 +114,57 @@ count_rows <- function(table, year) {
   n
 }
 
+# Read the vendored table list and keep only the primary-emissions tables.
 tbl <- read.csv(file.path(this_dir, "all_ghgrp_tables_years.csv"),
                 stringsAsFactors = FALSE, check.names = FALSE)
 tbl <- tbl[!is.na(tbl$PrimaryEmissions) & tbl$PrimaryEmissions == 1, ]
 
+# Download every table for every year, chunk by chunk.
 for (year in years) {
   yr <- as.character(year)
-  # tables whose REPORTING_YEAR list (e.g. "[2010, 2011, ...]") contains the year
+  # Keep the tables whose REPORTING_YEAR list (e.g. "[2010, 2011, ...]") contains the year.
   keep <- grepl(paste0("\\b", yr, "\\b"), tbl$REPORTING_YEAR)
   ytables <- tbl$TABLE[keep]
+  # Skip years with no tables to pull.
   if (!length(ytables)) { cat(sprintf("[GHGRP %s] no tables\n", yr)); next }
 
+  # Create the year folder and log the plan.
   ydir <- file.path(tables_root, yr)
   dir.create(ydir, recursive = TRUE, showWarnings = FALSE)
   cat(sprintf("[GHGRP %s] %d subpart emissions tables\n", yr, length(ytables)))
 
   for (table in ytables) {
+    # Skip tables already downloaded.
     out_file <- file.path(ydir, paste0(table, ".csv"))
     if (file.exists(out_file)) { cat("  exists, skip:", table, "\n"); next }
+    # Count the table's rows; skip it when the count fails or is zero.
     n <- count_rows(table, yr)
     if (is.na(n)) { cat("  count failed, skip:", table, "\n"); next }
     if (n == 0)   { cat("  0 rows:", table, "\n"); next }
 
+    # Fetch the table in 5,000-row chunks.
     cat(sprintf("  %s (rows: %d)\n", table, n))
     starts <- seq(0L, n, by = 5000L)
     first  <- TRUE
     ok     <- TRUE
     for (s in starts) {
+      # Build the chunk URL covering rows s through e.
       e   <- s + 4999L
       url <- sprintf("%s%s/REPORTING_YEAR/=/%s/ROWS/%d:%d/CSV",
                      enviro_base, table, yr, s, e)
+      # Download the chunk to a temporary file; stop the table on failure.
       tmp <- tempfile(fileext = ".csv")
       got <- tryCatch({ download.file(url, tmp, mode = "wb", quiet = TRUE); TRUE },
                       error = function(err) FALSE)
       if (!got) { ok <- FALSE; break }
+      # Append the chunk onto the table file and discard the temporary file.
       append_chunk(tmp, out_file, first); first <- FALSE
       invisible(suppressWarnings(file.remove(tmp)))
     }
-    if (!ok && file.exists(out_file)) invisible(file.remove(out_file))  # don't keep partial
+    # Remove the table file when a chunk failed, so nothing partial is kept.
+    if (!ok && file.exists(out_file)) invisible(file.remove(out_file))
   }
 }
 
+# Confirm where the data landed.
 cat("Done. GHGRP data under", out_dir, "\n")

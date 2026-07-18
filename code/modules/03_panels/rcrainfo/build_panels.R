@@ -80,8 +80,8 @@ build_if_missing(
 # ---- Stage 3: the panels --------------------------------------------------
 # Small outputs, always rebuilt so they reflect the current masters.
 run("code/modules/03_panels/rcrainfo/01_panel_2015_2023_balanced.R")
-run("code/modules/03_panels/rcrainfo/03_panel_2015_2023_unbalanced.R")
-run("code/modules/03_panels/rcrainfo/02_panel_eval_2015_2023.R")
+run("code/modules/03_panels/rcrainfo/02_panel_2015_2023_unbalanced.R")
+run("code/modules/03_panels/rcrainfo/03_panel_eval_2015_2023.R")
 run("code/modules/03_panels/rcrainfo/04_panel_enf_2015_2023.R")
 
 cat("\nDone. Panels are under output/panels/.\n")

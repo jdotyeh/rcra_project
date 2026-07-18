@@ -24,65 +24,76 @@
 # Source: https://rcrapublic.epa.gov/rcra-hwip/data-access/csv-downloads
 # Run from the repo root. Downloads are ~4 GB total, so this takes a while.
 
+# Load jsonlite to read the HWIP file listings.
 library(jsonlite)
 
+# Set the API base and the output root.
 api_base <- "https://rcrapublic.epa.gov/rcra-hwip/api/"
 out_root <- "data/rcrainfo"
-
-# Some zips are ~2 GB, so allow up to 3 hours per file
-options(timeout = 10800)
 
 # Append split CSVs into one file. Every part has its own header row,
 # so keep the header from the first part only. Parts are streamed in
 # chunks to keep memory use low (some parts are several hundred MB).
 append_parts <- function(parts, out_file) {
+  # Order the parts by their numeric suffix.
   parts <- parts[order(as.numeric(sub(".*_(\\d+)\\.csv$", "\\1", parts)))]
+  # Copy the first part, header included, as the base file.
   file.copy(parts[1], out_file, overwrite = TRUE)
+  # Open the base file for appending.
   out <- file(out_file, "at")
   for (p in parts[-1]) {
     con <- file(p, "rt")
+    # Discard the part's header row.
     readLines(con, n = 1)
+    # Stream the rest across in 100,000-line chunks.
     while (length(chunk <- readLines(con, n = 100000)) > 0) writeLines(chunk, out)
     close(con)
   }
   close(out)
+  # Remove the part files.
   invisible(file.remove(parts))
 }
 
 # Unzip a downloaded zip, unzip any nested table zips (module files contain
 # one zip per table), and append the split CSVs into one CSV per table
 process_zip <- function(zip_path, out_dir) {
+  # Extract the archive and remove it.
   extracted <- unzip(zip_path, exdir = out_dir)
   invisible(file.remove(zip_path))
 
+  # Unzip any nested table zips, then drop them from the file list.
   nested <- extracted[grepl("\\.zip$", extracted)]
   for (z in nested) extracted <- c(extracted, unzip(z, exdir = out_dir))
   invisible(file.remove(nested))
   extracted <- setdiff(extracted, nested)
 
+  # Find the split part files and append them into one CSV per table.
   csvs <- extracted[grepl("_\\d+\\.csv$", extracted)]
   bases <- sub("_\\d+\\.csv$", "", csvs)
   for (b in unique(bases)) append_parts(csvs[bases == b], paste0(b, ".csv"))
 }
 
-# The three sections of the downloads page
+# Fetch the file listings for the three sections of the downloads page.
 sections <- c("export/summaries", "export/modules", "export/tables")
 files <- do.call(rbind, lapply(sections, function(s) fromJSON(paste0(api_base, s))))
 
+# Download and process every listed file.
 for (i in seq_len(nrow(files))) {
   file_name <- files$fileName[i]
 
-  # Files belong to the module named by their prefix: CE_REPORTING.zip -> ce
+  # Route the file to the module named by its prefix: CE_REPORTING.zip -> ce.
   module <- tolower(strsplit(file_name, "[_.]")[[1]][1])
   out_dir <- file.path(out_root, module)
   dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
+  # Log progress, download the zip, and unpack it.
   cat(sprintf("[%d/%d] %s -> %s\n", i, nrow(files), file_name, out_dir))
   zip_path <- file.path(out_dir, file_name)
   download.file(files$url[i], zip_path, mode = "wb", quiet = TRUE)
   process_zip(zip_path, out_dir)
 }
 
+# Print the files per module as confirmation.
 cat("Done. Files per module:\n")
 for (m in list.files(out_root)) {
   cat(m, ":", paste(list.files(file.path(out_root, m)), collapse = ", "), "\n")

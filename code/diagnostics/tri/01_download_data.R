@@ -34,46 +34,55 @@
 # TRI_TREATMENT, TRI_TRANSFERS, TRI_POTW, TRI_PARENT, TRI_FACILITY,
 # TRI_SUBMISSION, and TRI_DEPRECATED (file 3b, not produced after 2010).
 
+# Set the reporting years and the output root.
 years    <- 2011:2024
 out_root <- "data/tri"
 
-# TRI Basic Plus file-type code -> content tag.
+# Map each TRI Basic Plus file-type code to its content tag.
 tri_names <- c("1a" = "RELEASES", "1b" = "REDUCTION", "2a" = "PROJECTIONS",
                "2b" = "TREATMENT", "3a" = "TRANSFERS", "3b" = "DEPRECATED",
                "3c" = "POTW", "4" = "PARENT", "5" = "FACILITY", "6" = "SUBMISSION")
 
-# year -> zip URL (dated-folder path; see note above).
+# Map each year to its zip URL (dated-folder path; see note above).
 base    <- "https://www.epa.gov/system/files/other-files"
 tri_zip <- setNames(sprintf("%s/2025-11/us_%d.zip", base, 2012:2024),
                     as.character(2012:2024))
 tri_zip["2011"] <- sprintf("%s/2025-09/us_2011.zip", base)
 
-# The national zips run from ~7 MB (older years) to ~65 MB; allow 30 minutes.
+# Allow 30 minutes; the national zips run from ~7 MB (older years) to ~65 MB.
 options(timeout = 1800)
 
+# Download and unpack each year.
 for (year in years) {
+  # Look up the year's URL; skip years without one.
   url <- tri_zip[[as.character(year)]]
   if (is.null(url) || is.na(url)) {
     cat(sprintf("[TRI %d] no URL on file; skipping (add it to tri_zip)\n", year))
     next
   }
+  # Create the year folder.
   out_dir <- file.path(out_root, year)
   dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
+  # Download the zip, reporting a failure without stopping the loop.
   zip_path <- file.path(out_dir, sprintf("us_%d.zip", year))
   cat(sprintf("[TRI %d] %s\n", year, url))
   ok <- tryCatch({ download.file(url, zip_path, mode = "wb", quiet = TRUE); TRUE },
                  error = function(e) { cat("  download failed:", conditionMessage(e), "\n"); FALSE })
   if (!ok) next
 
+  # Extract the archive and remove the zip.
   unzip(zip_path, exdir = out_dir)
   invisible(file.remove(zip_path))
+  # Rename each US_<code>_<year>.txt to its TRI_<TAG>.txt name.
   for (code in names(tri_names)) {
     src <- file.path(out_dir, sprintf("US_%s_%d.txt", code, year))
     if (file.exists(src))
       file.rename(src, file.path(out_dir, sprintf("TRI_%s.txt", tri_names[[code]])))
   }
+  # Log the extracted files.
   cat("  ->", paste(list.files(out_dir), collapse = ", "), "\n")
 }
 
+# Print the completed years as confirmation.
 cat("Done. Years in", out_root, ":", paste(list.files(out_root), collapse = ", "), "\n")

@@ -1,8 +1,11 @@
 # echo_rcra_pipeline Download
 
+Note: This folder has been verified.
+
 This source is the EPA ECHO RCRA pipeline dataset, which records compliance
-monitoring activities together with the violations and enforcement actions linked
-to them.
+monitoring activities (CMAs) together with the violations and enforcement actions linked
+to them. This dataset is currently limited to CMAs and violations from the past 10 years,
+plus older violations that remain unresolved.
 
 `01_download_data.R` downloads the archive, unzips it into
 `data/echo_rcra_pipeline/`, renames the tables to names that begin with

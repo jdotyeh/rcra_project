@@ -46,15 +46,15 @@ TABLE_MD    <- "resources/table.md"
 
 # ---- headline facts (curated copy; the README stays the canonical record) ----
 STATS <- list(
-  c("9",     "EPA data sources"),
+  c("4",     "EPA data sources"),
   c("7",     "RCRAInfo modules"),
   c("12",    "Biennial cycles"),
   c("4",     "Facility panels"),
-  c("~60",   "GB, reproducible"))
+  c("~45",   "GB, reproducible"))
 
 STAGES <- list(
   c("01", "Download",
-    "Nine EPA datasets pulled at run time from ECHO, RCRAInfo / HWIP, and five supplementary programs, each with its data dictionary scraped alongside."),
+    "Three EPA RCRA data sources pulled at run time from ECHO and RCRAInfo / HWIP, each with its data dictionary scraped alongside."),
   c("02", "Master files",
     "One analysis-ready CSV per module, each central table joined to its dimension tables with identifiers preserved verbatim."),
   c("03", "Panels",
@@ -68,7 +68,7 @@ SOURCES <- list(
     c("ECHO RCRA Pipeline",  "EPA / ECHO",   "Compliance-monitoring activities with linked violations and enforcement actions."),
     c("ECHO RCRAInfo",       "EPA / ECHO",   "Compliance and enforcement extract for hazardous-waste sites."),
     c("RCRAInfo CSV exports","EPA / HWIP",   "Complete module tables: Biennial Report, Corrective Action, CME, e-Manifest, Financial Assurance, Handler, Permitting, WIETS."))),
-  list(group = "Supplementary facility datasets", items = list(
+  list(group = "Diagnostics inventories (outside the pipeline)", items = list(
     c("TRI",   "EPA", "Toxics Release Inventory Basic Plus files, 2011-2024."),
     c("NEI",   "EPA", "National Emissions Inventory point-source extracts, 2011-2022."),
     c("GHGRP", "EPA", "Greenhouse Gas Reporting Program data and Envirofacts tables, 2011-2023."),
@@ -235,7 +235,7 @@ data_html <- function() {
   }, "")
   paste0(
     '<section class="sec" id="data"><div class="wrap">',
-    section_head("Nine public EPA sources",
+    section_head("Public EPA sources",
                  paste0("Downloaded at run time; only the FRS crosswalk is fetched by hand. ",
                         "None are redistributed here.")),
     '<div class="grid-3">', paste(grp, collapse = ""), '</div>',

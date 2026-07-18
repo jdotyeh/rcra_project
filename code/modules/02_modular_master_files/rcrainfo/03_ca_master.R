@@ -2,11 +2,12 @@
 # FILE:     03_ca_master.R
 # PURPOSE:  Build the Corrective Action module master file by crossing CA_EVENT
 #           with the module's linked dimension tables.
-# INPUTS:   data/rcrainfo/ca/*.csv (CA_EVENT plus its dimension tables)
+# INPUTS:   data/rcrainfo/ca/*.csv (CA_EVENT plus its dimension tables);
+#           sources 00_function.R
 # OUTPUTS:  output/modular_master_files/CA_MASTER.csv
 # AUTHOR:   Jason Ye
 # CREATED:  2026-07-08
-# UPDATED:  2026-07-08
+# UPDATED:  2026-07-17
 # =============================================================================
 #
 # Master file for the Corrective Action (ca) module:
@@ -31,22 +32,22 @@
 # linked to several of each expands to their product (as in HD_MASTER).
 #
 # All columns are read as character so zero-padded identifiers and yyyymmdd date
-# stamps survive verbatim.
+# stamps survive verbatim. The area's Y/N indicator columns are recoded to
+# integer 1/0 (see the module README). AUTHORITY_REPOSITORY is left alone: the
+# data dictionary presents it as a repository flag, but the raw values are the
+# codes 1/2/3/X, not Y/N.
 #
 # Requires: tidyverse
 # =============================================================================
 
-library(tidyverse)
+# Shared master-file helpers: read_module() and convert_indicators().
+# Loads tidyverse.
+source("code/modules/02_modular_master_files/rcrainfo/00_function.R")
 
 ca_dir   <- "data/rcrainfo/ca"
 out_file <- "output/modular_master_files/CA_MASTER.csv"
 
-read_ca <- function(file) {
-  df <- read_csv(file.path(ca_dir, file),
-                 col_types = cols(.default = "c"), show_col_types = FALSE)
-  names(df) <- gsub(" ", "_", names(df))
-  df
-}
+read_ca <- function(file) read_module(ca_dir, file)
 
 # Event identity. In CA_EVENT the handler column is HANDLER_ID; the link tables
 # spell the same key EVENT_HANDLER_ID, so the joins map it explicitly.
@@ -59,7 +60,10 @@ authority_keys <- c("AUTHORITY_ACTIVITY_LOCATION", "AUTHORITY_AGENCY",
 event <- read_ca("CA_EVENT.csv")
 
 area_event <- read_ca("CA_AREA_EVENT.csv")
-area       <- read_ca("CA_AREA.csv")
+area       <- read_ca("CA_AREA.csv") |>
+  convert_indicators(c("ENTIRE_FACILITY_IND", "REGULATED_UNIT_IND",
+                       "AIR_RELEASE_IND", "GROUNDWATER_RELEASE_IND",
+                       "SOIL_RELEASE_IND", "SURFACE_WATER_RELEASE_IND"))
 area_unit  <- read_ca("CA_AREA_UNIT.csv")
 
 event_authority <- read_ca("CA_EVENT_AUTHORITY.csv")

@@ -14,31 +14,31 @@
 # This project was developed and last run under R 4.4.2. The scripts avoid
 # newer language features, so a nearby 4.x release is expected to work as well.
 
-# Every package the pipeline relies on. The download stage uses rvest, xml2, and
-# jsonlite to read EPA pages and APIs; the processing stages use tidyverse and
-# lubridate for reshaping and dates; and all workbook output goes through
-# openxlsx2. Versions the code was last run against are noted in the root README.
+# List every package the pipeline relies on. Versions the code was last run
+# against are noted in the root README.
 required_packages <- c(
-  "rvest",
-  "xml2",
-  "jsonlite",
-  "tidyverse",
-  "lubridate",
-  "openxlsx2"
+  "rvest",      # scrape EPA web pages in the download stage
+  "xml2",       # parse XML and HTML returned by EPA pages and APIs
+  "jsonlite",   # parse JSON returned by EPA APIs
+  "tidyverse",  # reshape and summarize data in the processing stages
+  "lubridate",  # parse and compare dates
+  "openxlsx2"   # write all Excel workbook output
 )
 
-# Install only what is not already present, then load everything. Running the
-# whole pipeline a second time therefore installs nothing.
+# Identify the required packages that are not installed yet.
 missing_packages <- setdiff(required_packages, rownames(installed.packages()))
+
+# Install only the missing packages, so a second run installs nothing.
 if (length(missing_packages) > 0) {
   install.packages(missing_packages)
 }
 
+# Load every required package, hiding the attachment messages.
 invisible(lapply(required_packages, library, character.only = TRUE))
 
-# Folders the later stages write into. Raw data folders under data/ are created
-# by each download script as it runs, so only the derived-output folders and the
-# data/ root are guaranteed here. recursive = TRUE makes each call idempotent.
+# List the folders the later stages write into. Raw data folders under data/
+# are created by each download script as it runs, so only the derived-output
+# folders and the data/ root are guaranteed here.
 output_dirs <- c(
   "data",
   "output/summary_tables",
@@ -46,8 +46,10 @@ output_dirs <- c(
   "output/panels"
 )
 
+# Create each folder, skipping any that already exist.
 for (d in output_dirs) {
   dir.create(d, recursive = TRUE, showWarnings = FALSE)
 }
 
-cat("Setup complete. Packages loaded and output folders ready.\n")
+# Confirm that setup finished.
+cat("00_setup complete.\n")

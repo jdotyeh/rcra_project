@@ -3,8 +3,13 @@
 One analysis-ready master CSV per RCRAInfo module, built by
 `code/modules/02_modular_master_files/`. Each file is the module's central table
 joined to its dimension tables, with every column read as text so that
-identifiers and date stamps survive exactly as reported. These files are large and
-are rebuilt by the code rather than committed to the repository.
+identifiers and date stamps survive exactly as reported. Binary indicators are
+recoded from Y/N to 1/0, and Handler activity flags whose "N" predates the
+flag's existence carry the unknown code "U"; the recode rules and the unit of
+analysis of each master are documented in the
+[module README](../../code/modules/02_modular_master_files/rcrainfo/README.md).
+These files are large and are rebuilt by the code rather than committed to the
+repository.
 
 | File | Module | Notes |
 |------|--------|-------|

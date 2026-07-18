@@ -39,11 +39,11 @@ conflict-resolution design is documented in the file.
 balanced facility cycle panel of handlers recognized in the National Biennial
 Report as large quantity generators or as treatment, storage, and disposal
 facilities in all five cycles from 2015 through 2023. Its header documents the
-panel column by column. `03_panel_2015_2023_unbalanced.R` runs the same builder
+panel column by column. `02_panel_2015_2023_unbalanced.R` runs the same builder
 with `balanced = FALSE`, keeping every handler recognized in at least one cycle,
 a strict superset built by the same rules.
 
-`02_panel_eval_2015_2023.R` builds a balanced facility month panel of compliance
+`03_panel_eval_2015_2023.R` builds a balanced facility month panel of compliance
 evaluations from the Compliance master file, and `04_panel_enf_2015_2023.R` builds
 the matching facility month panel of enforcement actions from the same master
 file, both covering every month from January 2015 through December 2023. Their

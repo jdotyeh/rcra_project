@@ -16,8 +16,8 @@
 #   Categorical  : full distribution of EVERY category with n and % (of all
 #                  rows), missing shown as its own "(Missing)" row.
 # High-cardinality identifiers / free-text (HANDLER_ID, FRS_ID, HD_CONFLICTS,
-# HD_LOCATION_COUNTY, raw HD_NAICS_CODE) are not enumerated; NAICS is summarized
-# at the 2-digit sector level instead.
+# HD_LOCATION_COUNTY, the NAICS4/NAICS6_* codes) are not enumerated; NAICS is
+# summarized at the 2-digit sector level (from NAICS4) instead.
 #
 # Writes long-format CSVs + a 2-sheet workbook under output/panels/summary/.
 # Requires: tidyverse (+ openxlsx2 for the .xlsx; skipped if unavailable).
@@ -63,9 +63,9 @@ num_summary <- map(num_vars, function(v) {
   mutate(across(c(min, p5, median, mean, p95, max), \(z) round(z, 4)))
 
 # -- Categorical distributions (all categories, n + pct) ----------------------
-# NAICS enumerated at 2-digit sector level, not the raw code.
-p <- mutate(p, HD_NAICS_SECTOR = if_else(is.na(HD_NAICS_CODE), NA_character_,
-                                         substr(HD_NAICS_CODE, 1, 2)))
+# NAICS enumerated at 2-digit sector level (from NAICS4), not the raw codes.
+p <- mutate(p, HD_NAICS_SECTOR = if_else(is.na(NAICS4), NA_character_,
+                                         substr(NAICS4, 1, 2)))
 cat_all <- c(cat_vars, "HD_NAICS_SECTOR")
 
 one_cat <- function(v) {

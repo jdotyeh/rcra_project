@@ -2,11 +2,12 @@
 # FILE:     04_pm_master.R
 # PURPOSE:  Build the Permitting, Closure and Post-Closure module master file by
 #           crossing PM_EVENT with the module's dimension tables.
-# INPUTS:   data/rcrainfo/pm/*.csv (PM_EVENT plus its dimension tables)
+# INPUTS:   data/rcrainfo/pm/*.csv (PM_EVENT plus its dimension tables);
+#           sources 00_function.R
 # OUTPUTS:  output/modular_master_files/PM_MASTER.csv
 # AUTHOR:   Jason Ye
 # CREATED:  2026-07-08
-# UPDATED:  2026-07-08
+# UPDATED:  2026-07-17
 # =============================================================================
 #
 # Master file for the Permitting, Closure & Post-Closure (pm) module:
@@ -28,22 +29,20 @@
 #                         key is carried, prefixed SUBSEQUENT_MOD_ (linkage only)
 #
 # All columns are read as character so zero-padded identifiers and yyyymmdd date
-# stamps survive verbatim.
+# stamps survive verbatim. The unit detail's Y/N indicator columns are recoded
+# to integer 1/0 (see the module README).
 #
 # Requires: tidyverse
 # =============================================================================
 
-library(tidyverse)
+# Shared master-file helpers: read_module() and convert_indicators().
+# Loads tidyverse.
+source("code/modules/02_modular_master_files/rcrainfo/00_function.R")
 
 pm_dir   <- "data/rcrainfo/pm"
 out_file <- "output/modular_master_files/PM_MASTER.csv"
 
-read_pm <- function(file) {
-  df <- read_csv(file.path(pm_dir, file),
-                 col_types = cols(.default = "c"), show_col_types = FALSE)
-  names(df) <- gsub(" ", "_", names(df))
-  df
-}
+read_pm <- function(file) read_module(pm_dir, file)
 
 # Event identity. PM_EVENT spells the handler / series keys HANDLER_ID /
 # SERIES_SEQ; the link tables prefix them EVENT_, so the joins map them.
@@ -60,7 +59,8 @@ series <- read_pm("PM_SERIES.csv") |>
          SERIES_RESPONSIBLE_PERSON       = RESPONSIBLE_PERSON)
 
 event_unit_detail <- read_pm("PM_EVENT_UNIT_DETAIL.csv")
-unit_detail       <- read_pm("PM_UNIT_DETAIL.csv")
+unit_detail       <- read_pm("PM_UNIT_DETAIL.csv") |>
+  convert_indicators(c("STANDARDIZED_PERMIT_IND", "CURRENT_UNIT_DETAIL"))
 unit              <- read_pm("PM_UNIT.csv")
 unit_detail_waste <- read_pm("PM_UNIT_DETAIL_WASTE.csv")
 

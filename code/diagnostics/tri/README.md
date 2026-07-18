@@ -1,9 +1,15 @@
-# TRI Data
+# tri Download
 
-EPA Toxics Release Inventory (TRI) Basic Plus files, downloaded by
-`code/modules/01_download/tri/01_download_data.R`. One folder per reporting year
-(the year is in the folder path, not the file name). Files are tab-delimited and
-kept raw as downloaded.
+This inventory is the EPA Toxics Release Inventory (TRI) Basic Plus files,
+reporting years 2011 through 2024. It is not part of the pipeline; see the
+[diagnostics README](../README.md) for how these inventories are meant to be
+used.
+
+`01_download_data.R` downloads one national archive per year, unzips it into
+`data/tri/`, one folder per reporting year, and renames the extracted files to
+content tags. The files are tab delimited and are kept raw, because parsing and
+subsetting belong to a later cleaning step. The per year download URLs are pinned
+in the script.
 
 Each year folder contains:
 

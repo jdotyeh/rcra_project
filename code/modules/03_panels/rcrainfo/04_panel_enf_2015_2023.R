@@ -79,10 +79,11 @@
 #     CE_ANY_ENF,       CE_TOTAL_ENF        all enforcement actions in the month
 #     CE_ANY_STATE_ENF, CE_TOTAL_STATE_ENF  ENF_AGENCY == "S" (state issued)
 #     CE_ANY_FED_ENF,   CE_TOTAL_FED_ENF    ENF_AGENCY == "E" (EPA/federal issued)
-#     CE_ANY_CA_COMPONENT   1 if any action in the month has CA_COMPONENT == "Y"
-#                           (corrective-action component), else 0.
+#     CE_ANY_CA_COMPONENT   1 if any action in the month has CA_COMPONENT == "1"
+#                           (corrective-action component; CE_MASTER codes the
+#                           flag 1/0), else 0.
 #     CE_ANY_FA_REQUIREMENT 1 if any action in the month has FA_REQUIREMENT ==
-#                           "Y" (financial-assurance requirement), else 0.
+#                           "1" (financial-assurance requirement, 1/0), else 0.
 #
 # Enforcement responsible agency is "S" or "E" for every action in the window,
 # so the state/federal split is exhaustive; any other agency code, if it ever
@@ -159,8 +160,8 @@ agg <- acts |>
     CE_TOTAL_ENF          = n(),
     CE_TOTAL_STATE_ENF    = sum(ENF_AGENCY == "S", na.rm = TRUE),
     CE_TOTAL_FED_ENF      = sum(ENF_AGENCY == "E", na.rm = TRUE),
-    CE_ANY_CA_COMPONENT   = as.integer(any(CA_COMPONENT   == "Y", na.rm = TRUE)),
-    CE_ANY_FA_REQUIREMENT = as.integer(any(FA_REQUIREMENT == "Y", na.rm = TRUE)),
+    CE_ANY_CA_COMPONENT   = as.integer(any(CA_COMPONENT   == "1", na.rm = TRUE)),
+    CE_ANY_FA_REQUIREMENT = as.integer(any(FA_REQUIREMENT == "1", na.rm = TRUE)),
     .groups = "drop")
 
 # -- 3. Handler attributes (most recent action's snapshot) ---------------------

@@ -20,7 +20,7 @@
 #
 # All build logic lives in 00_panel_functions.R (build_br_panel() and its
 # helpers); this script sets the panel's parameters and runs it. The unbalanced
-# counterpart (03_panel_2015_2023_unbalanced.R) runs the same builder with
+# counterpart (02_panel_2015_2023_unbalanced.R) runs the same builder with
 # balanced = FALSE.
 #
 # Columns
@@ -38,8 +38,8 @@
 #                      HD_TSDF_CONF booleans.
 #   BR_GENERATOR       "L" if any BR_REPORTING row that cycle has
 #                      CALCULATED_GENERATOR_STATUS == "L", else "N".
-#   BR_TSDF            "Y" if any row that cycle has MGMT_ID_INCLUDED_IN_NBR or
-#                      RECV_ID_INCLUDED_IN_NBR == "Y", else "N".
+#   BR_TSDF            1 if any row that cycle has MGMT_ID_INCLUDED_IN_NBR or
+#                      RECV_ID_INCLUDED_IN_NBR == "Y" (raw BR coding), else 0.
 #   BR_GENERATE_TONS   Facility-year Biennial Report tonnages, summed over the
 #   BR_MANAGE_TONS     BR_REPORTING waste lines, each restricted to the lines
 #   BR_SHIP_TONS       EPA counts toward the matching Biennial Report total
@@ -48,16 +48,21 @@
 #                      counting.
 #                      Written as clean fixed-decimal strings (<=7 dp).
 #   HD_*               Handler-master (HD_MASTER) attributes, one value per
-#                      facility-year. Every source record sets a value from its
-#                      RECEIVE_DATE forward (step function), carrying the last
-#                      value before Jan 1 in. Assignment over the calendar year
-#                      then depends on the variable class:
+#                      facility-year. The activity indicators arrive from the
+#                      master coded 1/0, with "U" where an "N" predates the
+#                      flag's existence (see the 02_modular_master_files
+#                      README), and keep that coding here. Every source record
+#                      sets a value from its RECEIVE_DATE forward (step
+#                      function), carrying the last value before Jan 1 in.
+#                      Assignment over the calendar year then depends on the
+#                      variable class:
 #                        - ranked statuses (HD_GENERATOR, HD_TSDF,
 #                          HD_STATE_GENERATOR): most days of the year wins, day
-#                          ties break on severity (L>S>VS>N>P>U, Y>N, federal
+#                          ties break on severity (L>S>VS>N>P>U, 1>0>U, federal
 #                          hierarchy for the state code);
-#                        - Y/N activity indicators: severity-dominant, Y at any
-#                          point of the year makes the year Y;
+#                        - 1/0 activity indicators: severity-dominant, 1 at any
+#                          point of the year makes the year 1, and a real 0
+#                          beats an unknown U;
 #                        - plain descriptive attributes (location fields): most
 #                          days wins, day ties toward the most recently
 #                          received value.

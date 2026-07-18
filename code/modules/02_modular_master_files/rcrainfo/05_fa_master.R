@@ -2,11 +2,12 @@
 # FILE:     05_fa_master.R
 # PURPOSE:  Build the Financial Assurance module master file by joining
 #           FA_COST_ESTIMATE to the financial mechanism that funds it.
-# INPUTS:   data/rcrainfo/fa/*.csv (FA_COST_ESTIMATE plus its dimension tables)
+# INPUTS:   data/rcrainfo/fa/*.csv (FA_COST_ESTIMATE plus its dimension tables);
+#           sources 00_function.R
 # OUTPUTS:  output/modular_master_files/FA_MASTER.csv
 # AUTHOR:   Jason Ye
 # CREATED:  2026-07-08
-# UPDATED:  2026-07-08
+# UPDATED:  2026-07-17
 # =============================================================================
 #
 # Master file for the Financial Assurance (fa) module:
@@ -25,22 +26,20 @@
 #                             contact name / phone / email)
 #
 # All columns are read as character so zero-padded identifiers, dollar amounts,
-# and yyyymmdd date stamps survive verbatim.
+# and yyyymmdd date stamps survive verbatim. The two current-record Y/N flags
+# are recoded to integer 1/0 (see the module README).
 #
 # Requires: tidyverse
 # =============================================================================
 
-library(tidyverse)
+# Shared master-file helpers: read_module() and convert_indicators().
+# Loads tidyverse.
+source("code/modules/02_modular_master_files/rcrainfo/00_function.R")
 
 fa_dir   <- "data/rcrainfo/fa"
 out_file <- "output/modular_master_files/FA_MASTER.csv"
 
-read_fa <- function(file) {
-  df <- read_csv(file.path(fa_dir, file),
-                 col_types = cols(.default = "c"), show_col_types = FALSE)
-  names(df) <- gsub(" ", "_", names(df))
-  df
-}
+read_fa <- function(file) read_module(fa_dir, file)
 
 # Cost-estimate identity. FA_COST_ESTIMATE spells the handler key HANDLER_ID;
 # the link table prefixes it COST_.
@@ -50,9 +49,11 @@ cost_keys <- c("COST_ACTIVITY_LOCATION", "COST_FA_TYPE", "COST_AGENCY",
 mech_keys        <- c("MECH_ACTIVITY_LOCATION", "MECH_AGENCY", "MECH_SEQ")
 mech_detail_keys <- c(mech_keys, "MECH_DETAIL_SEQ")
 
-cost_estimate  <- read_fa("FA_COST_ESTIMATE.csv")
+cost_estimate  <- read_fa("FA_COST_ESTIMATE.csv") |>
+  convert_indicators("CURRENT_COST_ESTIMATE")
 cost_mechanism <- read_fa("FA_COST_MECHANISM_DETAIL.csv")
-mech_detail    <- read_fa("FA_MECHANISM_DETAIL.csv")
+mech_detail    <- read_fa("FA_MECHANISM_DETAIL.csv") |>
+  convert_indicators("CURRENT_MECHANISM_DETAIL")
 mechanism      <- read_fa("FA_MECHANISM.csv")
 
 master <- cost_estimate |>

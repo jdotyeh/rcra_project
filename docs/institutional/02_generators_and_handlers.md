@@ -3,22 +3,19 @@
 ## The regulated universe
 
 Everyone the program regulates is a handler, and a handler receives an
-identification number when it notifies the agency of its activity on Form
+ID number when it notifies the agency of its activity on Form
 8700-12. The number is tied to a site, and the site can be a generator, a
-transporter, a treatment, storage, and disposal facility, or several of these at
+transporter, a TSDF, or several of these at
 once. The Handler module is where a site's identity, location, industry codes,
 owners and operators, and declared activities live.
 
 ## Generator size categories
 
 How much hazardous waste a site generates in a calendar month decides its
-category, and the category decides which rules it must follow. A very small
-quantity generator produces no more than one hundred kilograms of hazardous waste
-a month. A small quantity generator produces more than one hundred but less than
-one thousand kilograms a month. A large quantity generator produces one thousand
-kilograms or more a month, or more than a small amount of acutely hazardous waste.
+category, and the category decides which rules it must follow. A VSQG produces no more than 100 kg of hazardous waste a month. A SQG produces more than 100 kg but less than
+1,000 kg (1T) a month. An LQG produces 1,000 kg or more a month, or more than a small amount of acutely hazardous waste.
 A rule finalized in 2016 renamed the smallest category, which had been called the
-conditionally exempt small quantity generator, and added a path for a site to
+conditionally exempt small quantity generator (CESQG), and added a path for a site to
 handle a one-time episodic surge without moving permanently into a higher
 category.
 
@@ -29,7 +26,7 @@ generator of federal hazardous waste as at least a small quantity generator.
 Washington uses its own dangerous waste tiers in place of the federal ones. The
 state-by-state detail is in `resources/table.md`.
 
-## Treatment, storage, and disposal facilities
+## TSDFs
 
 A facility that treats, stores, or disposes of hazardous waste sits at the end of
 the cradle to grave chain and carries the heaviest obligations. It generally
@@ -47,7 +44,7 @@ have to be read carefully rather than counted naively.
 
 The panels lean on two derived facts from this module. A handler counts as a large
 quantity generator in a cycle when its calculated generator status is `L`, and it
-counts as a treatment, storage, and disposal facility when the national-inclusion
+counts as a TSDF when the national-inclusion
 flags mark it as managing or receiving waste counted in the national report. When
 a handler files more than one value for the same attribute in the same year, the
 panel records that disagreement in a conflicts column rather than silently picking

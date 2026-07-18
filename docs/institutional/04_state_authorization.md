@@ -3,7 +3,7 @@
 ## The division of labor
 
 The hazardous waste program is federal law carried out mostly by the states. The
-statute lets the Environmental Protection Agency authorize a state to run its own
+statute lets the EPA authorize a state to run its own
 hazardous waste program in place of the federal one, and almost every state is
 authorized for the base program. Where a state is not authorized the federal
 agency runs the program through its regional office, which the state-by-state

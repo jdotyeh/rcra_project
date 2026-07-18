@@ -2,11 +2,12 @@
 # FILE:     06_wt_exports_master.R
 # PURPOSE:  Build the WIETS exports master file by left-joining
 #           WT_NOTICES_EXPORTS with its dimension and annual-report tables.
-# INPUTS:   data/rcrainfo/wt/*.csv (WT_NOTICES_EXPORTS, WT_AR_<year>, dimensions)
+# INPUTS:   data/rcrainfo/wt/*.csv (WT_NOTICES_EXPORTS, WT_AR_<year>, dimensions);
+#           sources 00_function.R
 # OUTPUTS:  output/modular_master_files/WT_EXPORTS_MASTER.csv
 # AUTHOR:   Jason Ye
 # CREATED:  2026-07-08
-# UPDATED:  2026-07-08
+# UPDATED:  2026-07-17
 # =============================================================================
 #
 # Master file for the WIETS (Waste Import Export Tracking System) exports side:
@@ -25,22 +26,20 @@
 # one row with the annual-report columns blank.
 #
 # All columns are read as character so zero-padded identifiers, quantities, and
-# yyyymmdd date stamps survive verbatim.
+# yyyymmdd date stamps survive verbatim. WIETS carries no Y/N indicator
+# columns, so the 1/0 conversion applied in the other masters has nothing to
+# convert here.
 #
 # Requires: tidyverse
 # =============================================================================
 
-library(tidyverse)
+# Shared master-file helpers: read_module(). Loads tidyverse.
+source("code/modules/02_modular_master_files/rcrainfo/00_function.R")
 
 wt_dir   <- "data/rcrainfo/wt"
 out_file <- "output/modular_master_files/WT_EXPORTS_MASTER.csv"
 
-read_wt <- function(file) {
-  df <- read_csv(file.path(wt_dir, file),
-                 col_types = cols(.default = "c"), show_col_types = FALSE)
-  names(df) <- gsub(" ", "_", names(df))
-  df
-}
+read_wt <- function(file) read_module(wt_dir, file)
 
 notices <- read_wt("WT_NOTICES_EXPORTS.csv")
 

@@ -1,5 +1,7 @@
 # rcrainfo Download
 
+Note: This folder has been verified.
+
 This source is the complete set of RCRAInfo module tables from the EPA Hazardous
 Waste Information Platform, covering the Biennial Report, Corrective Action,
 Compliance Monitoring and Enforcement, e-Manifest, Financial Assurance, Handler,

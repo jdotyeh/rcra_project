@@ -1,5 +1,5 @@
 # =============================================================================
-# FILE:     02_panel_eval_2015_2023.R
+# FILE:     03_panel_eval_2015_2023.R
 # PURPOSE:  Build the balanced facility-month panel of RCRA compliance
 #           evaluations from CE_MASTER, months 2015-01 through 2023-12, with the
 #           FRS link.
@@ -80,15 +80,17 @@
 #     CE_ANY_OTHER, CE_TOTAL_OTHER   every other EVAL_TYPE (SNY, SNN, FUI,
 #                                    CSE, CDI, CAV, OAM, CAC, GME, NIR)
 #     CE_ANY_VIOL,  CE_EVALS_WITH_VIOL
-#                                    evaluations with FOUND_VIOLATION == "Y";
-#                                    "N" and "U" (undetermined) do not count.
+#                                    evaluations with FOUND_VIOLATION == "1"
+#                                    (CE_MASTER codes it 1/0/U); "0" and "U"
+#                                    (undetermined) do not count.
 #
 #   Evaluation attribute indicators (0 on months with no evaluation; 1 when any
-#   evaluation in the month carries the Y/N attribute as "Y", else 0):
-#     CE_ANY_CITIZEN_COMPLAINT      <- CITIZEN_COMPLAINT     (~2.6% "Y")
-#     CE_ANY_MULTIMEDIA_INSPECTION  <- MULTIMEDIA_INSPECTION (~2.6% "Y")
-#     CE_ANY_SAMPLING               <- SAMPLING              (~0.2% "Y")
-#     CE_ANY_NOT_SUBTITLE_C         <- NOT_SUBTITLE_C        (~0.1% "Y")
+#   evaluation in the month carries the 1/0 attribute as "1", else 0; CE_MASTER
+#   codes these flags 1/0):
+#     CE_ANY_CITIZEN_COMPLAINT      <- CITIZEN_COMPLAINT     (~2.6% coded 1)
+#     CE_ANY_MULTIMEDIA_INSPECTION  <- MULTIMEDIA_INSPECTION (~2.6% coded 1)
+#     CE_ANY_SAMPLING               <- SAMPLING              (~0.2% coded 1)
+#     CE_ANY_NOT_SUBTITLE_C         <- NOT_SUBTITLE_C        (~0.1% coded 1)
 #
 # Requires: tidyverse (incl. lubridate)
 # =============================================================================
@@ -144,11 +146,11 @@ agg <- evals |>
     CE_TOTAL_FRR        = sum(EVAL_TYPE == "FRR", na.rm = TRUE),
     CE_TOTAL_FSD        = sum(EVAL_TYPE == "FSD", na.rm = TRUE),
     CE_TOTAL_OTHER      = sum(!EVAL_TYPE %in% typed, na.rm = TRUE),
-    CE_EVALS_WITH_VIOL  = sum(FOUND_VIOLATION == "Y", na.rm = TRUE),
-    CE_ANY_CITIZEN_COMPLAINT     = as.integer(any(CITIZEN_COMPLAINT     == "Y", na.rm = TRUE)),
-    CE_ANY_MULTIMEDIA_INSPECTION = as.integer(any(MULTIMEDIA_INSPECTION == "Y", na.rm = TRUE)),
-    CE_ANY_SAMPLING              = as.integer(any(SAMPLING              == "Y", na.rm = TRUE)),
-    CE_ANY_NOT_SUBTITLE_C        = as.integer(any(NOT_SUBTITLE_C        == "Y", na.rm = TRUE)),
+    CE_EVALS_WITH_VIOL  = sum(FOUND_VIOLATION == "1", na.rm = TRUE),
+    CE_ANY_CITIZEN_COMPLAINT     = as.integer(any(CITIZEN_COMPLAINT     == "1", na.rm = TRUE)),
+    CE_ANY_MULTIMEDIA_INSPECTION = as.integer(any(MULTIMEDIA_INSPECTION == "1", na.rm = TRUE)),
+    CE_ANY_SAMPLING              = as.integer(any(SAMPLING              == "1", na.rm = TRUE)),
+    CE_ANY_NOT_SUBTITLE_C        = as.integer(any(NOT_SUBTITLE_C        == "1", na.rm = TRUE)),
     CE_EVAL_LAST_CHANGE = {v <- EVAL_LAST_CHANGE[!is.na(EVAL_LAST_CHANGE)]
                            if (length(v)) max(v) else NA_character_},
     .groups = "drop")

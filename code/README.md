@@ -10,9 +10,7 @@ From the repository root, run `Rscript code/master.R`. The master script finds
 every script under `code/modules/` and sources them in path order, so the setup
 step runs first and the four numbered stages follow in sequence. Each script runs
 in its own environment so that one cannot disturb another. A full pass downloads
-tens of gigabytes and takes several hours, and the DMR download in particular is
-rate limited by EPA and resumes over several days without holding up the rest of
-the run.
+tens of gigabytes and takes several hours.
 
 ## Layout
 
@@ -20,7 +18,7 @@ The `modules/` folder contains the pipeline itself, one subfolder per stage.
 
 - `00_setup` installs and loads the R packages the pipeline needs and creates the
   output folders that later stages write into.
-- `01_download` downloads the raw EPA data and, for the RCRA sources, scrapes the
+- `01_download` downloads the three raw RCRA data sources and scrapes the
   matching data dictionaries. It has one subfolder per data source.
 - `02_modular_master_files` joins each RCRAInfo module into one analysis ready
   master file.
@@ -28,6 +26,11 @@ The `modules/` folder contains the pipeline itself, one subfolder per stage.
   Report.
 - `04_summary_tables` builds a variable level summary workbook for the central
   table of each RCRAInfo module and for each Biennial Report cycle.
+
+The `diagnostics/` folder holds download scripts for five supplementary EPA
+inventories (TRI, NEI, GHGRP, eGRID, DMR) that are useful for extracting more
+information about the panel facilities but sit outside the pipeline, so the
+master script never runs them. See [diagnostics/README.md](diagnostics/README.md).
 
 The `utils/` folder holds convenience scripts that support the project but are not
 part of the pipeline, so the master script never runs them. See

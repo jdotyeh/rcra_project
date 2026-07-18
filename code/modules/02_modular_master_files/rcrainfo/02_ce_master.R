@@ -2,11 +2,12 @@
 # FILE:     02_ce_master.R
 # PURPOSE:  Build the Compliance Monitoring and Enforcement module master file by
 #           left-joining CE_REPORTING with the CE_CITATION dimension.
-# INPUTS:   data/rcrainfo/ce/*.csv (CE_REPORTING, CE_CITATION)
+# INPUTS:   data/rcrainfo/ce/*.csv (CE_REPORTING, CE_CITATION);
+#           sources 00_function.R
 # OUTPUTS:  output/modular_master_files/CE_MASTER.csv
 # AUTHOR:   Jason Ye
 # CREATED:  2026-07-08
-# UPDATED:  2026-07-08
+# UPDATED:  2026-07-17
 # =============================================================================
 #
 # Master file for the Compliance, Monitoring & Enforcement (ce) module:
@@ -17,24 +18,26 @@
 # citation combination; every field in the module is kept.
 #
 # All columns are read as character so zero-padded identifiers (e.g. eval
-# identifier "001") and yyyymmdd date stamps survive verbatim.
+# identifier "001") and yyyymmdd date stamps survive verbatim. Y/N indicator
+# columns are recoded to 1/0 (see the module README); FOUND_VIOLATION also
+# carries "U" (undetermined) and so stays character as "1"/"0"/"U".
 #
 # Requires: tidyverse
 # =============================================================================
 
-library(tidyverse)
+# Shared master-file helpers: read_module() and convert_indicators().
+# Loads tidyverse.
+source("code/modules/02_modular_master_files/rcrainfo/00_function.R")
 
 ce_dir  <- "data/rcrainfo/ce"
 out_file <- "output/modular_master_files/CE_MASTER.csv"
 
-read_ce <- function(file) {
-  df <- read_csv(file.path(ce_dir, file),
-                 col_types = cols(.default = "c"), show_col_types = FALSE)
-  names(df) <- gsub(" ", "_", names(df))
-  df
-}
+read_ce <- function(file) read_module(ce_dir, file)
 
-reporting <- read_ce("CE_REPORTING.csv")
+reporting <- read_ce("CE_REPORTING.csv") |>
+  convert_indicators(c("FOUND_VIOLATION", "CITIZEN_COMPLAINT",
+                       "MULTIMEDIA_INSPECTION", "SAMPLING", "NOT_SUBTITLE_C",
+                       "CA_COMPONENT", "FA_REQUIREMENT"))
 citation  <- read_ce("CE_CITATION.csv") |>
   rename(VIOL_TYPE_OWNER = VIOL_OWNER)
 

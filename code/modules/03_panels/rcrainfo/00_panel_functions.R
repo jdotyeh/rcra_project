@@ -60,7 +60,7 @@ write_panel <- function(out, out_file, rds = FALSE) {
 # keeps only handlers recognized in ALL cycles, balanced = FALSE keeps every
 # handler in the cycles where it qualifies. The column definitions and the
 # conflict-resolution design are documented in the two build scripts
-# (01_panel_2015_2023_balanced.R, 03_panel_2015_2023_unbalanced.R).
+# (01_panel_2015_2023_balanced.R, 02_panel_2015_2023_unbalanced.R).
 #
 # Conflict resolution (one design, three tiers). Timelines are built per
 # HANDLER_ID across all source records; records sharing a RECEIVE_DATE collapse
@@ -70,8 +70,12 @@ write_panel <- function(out, out_file, rds = FALSE) {
 #                           facility-year still flagged in HD_CONFLICTS is then
 #                           overridden by BR_GENERATOR -- the Biennial Report is
 #                           authoritative for the federal generator status.
-#   2. Y/N indicators       higher status wins: Y > N (tsd_sev for TSD_ACTIVITY;
-#                           slice_max(val) does the same for the batch attrs).
+#   2. 1/0 indicators       higher status wins: 1 > 0 > U (tsd_sev for
+#                           TSD_ACTIVITY; ind_sev for the batch attrs). The
+#                           masters code these flags 1/0, with "U" for entries
+#                           whose "N" predates the flag (see the
+#                           02_modular_master_files README); unknown never
+#                           beats a real value.
 #   3. STATE_WASTE_GENERATOR state code mapped to the federal hierarchy
 #                           (L=1 > S=2 > VS=3 > N, state_sev) and the higher
 #                           status wins; codes with no federal mapping rank
@@ -81,7 +85,9 @@ write_panel <- function(out, out_file, rds = FALSE) {
 
 # Recode + severity (higher = more severe) for the HD_MASTER status timelines.
 gen_sev    <- c(L = 5L, S = 4L, VS = 3L, N = 2L, P = 1L, U = 0L)
-tsd_sev    <- c(Y = 1L, N = 0L)
+tsd_sev    <- c(`1` = 2L, `0` = 1L, U = 0L)
+# The master-file 1/0/U activity indicators, ranked 1 > 0 > U.
+ind_sev    <- c(`1` = 2L, `0` = 1L, U = 0L)
 # State generator resolved on the FEDERAL hierarchy: convert the state code
 # (L=1 > S=2 > VS=3 > N), numerics already federal. Codes outside this set have
 # no federal mapping -> severity -1 via coalesce, so they never beat a
@@ -162,19 +168,21 @@ br_one_cycle <- function(year, br_dir) {
                                 `SHIP WASTE INCLUDED IN NBR`, `RECV WASTE INCLUDED IN NBR`))
   names(br) <- gsub(" ", "_", names(br))
 
+  # The raw BR flags stay Y/N-coded (only the master files recode indicators),
+  # so the tests here read the raw codes; BR_TSDF leaves as a 1/0 indicator.
   br |>
     mutate(across(ends_with("_TONS"), as.numeric)) |>
     group_by(HANDLER_ID) |>
     summarise(
       BR_GENERATOR = if_else(any(CALCULATED_GENERATOR_STATUS == "L", na.rm = TRUE), "L", "N"),
       BR_TSDF      = if_else(any(MGMT_ID_INCLUDED_IN_NBR == "Y" |
-                                   RECV_ID_INCLUDED_IN_NBR == "Y", na.rm = TRUE), "Y", "N"),
+                                   RECV_ID_INCLUDED_IN_NBR == "Y", na.rm = TRUE), 1L, 0L),
       BR_GENERATE_TONS = sum(GENERATION_TONS[GEN_WASTE_INCLUDED_IN_NBR == "Y"], na.rm = TRUE),
       BR_MANAGE_TONS   = sum(MANAGED_TONS[MGMT_WASTE_INCLUDED_IN_NBR == "Y"],    na.rm = TRUE),
       BR_SHIP_TONS     = sum(SHIPPED_TONS[SHIP_WASTE_INCLUDED_IN_NBR == "Y"],    na.rm = TRUE),
       BR_RECEIVE_TONS  = sum(RECEIVED_TONS[RECV_WASTE_INCLUDED_IN_NBR == "Y"],   na.rm = TRUE),
       .groups = "drop") |>
-    filter(BR_GENERATOR == "L" | BR_TSDF == "Y") |>
+    filter(BR_GENERATOR == "L" | BR_TSDF == 1L) |>
     mutate(REPORT_CYCLE = as.character(year))
 }
 
@@ -399,10 +407,11 @@ dominant <- function(rec, windows, value_col, sev_map, out_name, recode_map = NU
 # attribute column; each step interval is expanded only to the panel years it
 # actually overlaps (rather than cross-joined against all years) to keep the
 # intermediate small. Two regimes:
-#   - Y/N activity indicators (ind_src): severity-dominant. A facility that is
-#     classified as, e.g., a slab importer at ANY point of the calendar year is
-#     one that year (Y beats N regardless of days held); duration then most
-#     recent break residual ties among equal values.
+#   - 1/0 activity indicators (ind_src): severity-dominant on 1 > 0 > U
+#     (ind_sev). A facility that is classified as, e.g., a slab importer at
+#     ANY point of the calendar year is one that year (1 beats 0 and U
+#     regardless of days held, and a real 0 beats an unknown U); duration then
+#     most recent break residual ties among equal values.
 #   - Plain descriptive attributes (location fields): duration-dominant, most
 #     days of the calendar year wins, day ties toward the most recently
 #     received value.
@@ -417,10 +426,13 @@ dominant_attrs <- function(rec, panel_years) {
     pivot_longer(all_of(names(hd_attr_map)), names_to = "src", values_to = "val") |>
     filter(!is.na(val), val != "") |>
     distinct(HANDLER_ID, src, date, val) |>
-    # same handler+field+date disagreement -> the higher status wins (Y > N for
-    # the indicators; max() generally), per the conflict-resolution tiers
+    # Indicator severity (1 > 0 > U, unmapped codes lowest); plain attributes
+    # get a constant so days and recency decide for them.
+    mutate(sev = if_else(src %in% ind_src, coalesce(ind_sev[val], -1L), 0L)) |>
+    # same handler+field+date disagreement -> the higher status wins (1 > 0 > U
+    # for the indicators; max value otherwise), per the conflict-resolution tiers
     group_by(HANDLER_ID, src, date) |>
-    slice_max(val, n = 1, with_ties = FALSE) |>
+    slice_max(tibble(sev, val), n = 1, with_ties = FALSE) |>
     # step function: each value holds from its date to the next date for that field
     group_by(HANDLER_ID, src) |>
     arrange(date, .by_group = TRUE) |>
@@ -437,12 +449,12 @@ dominant_attrs <- function(rec, panel_years) {
                                pmax(date, ymd(paste0(yr, "0101"))))) |>
     filter(days > 0) |>
     group_by(HANDLER_ID, REPORT_CYCLE = as.character(yr), src, val) |>
-    summarise(days = sum(days), last_date = max(date), .groups = "drop") |>
+    summarise(days = sum(days), last_date = max(date), sev = first(sev),
+              .groups = "drop") |>
     group_by(HANDLER_ID, REPORT_CYCLE, src) |>
-    # Indicators rank severity first (val desc puts "Y" over "N"); plain
-    # attributes get a constant key there, so days then recency decide.
-    arrange(desc(if_else(src %in% ind_src, val, "")),
-            desc(days), desc(last_date), .by_group = TRUE) |>
+    # Indicators rank severity first (1 > 0 > U); plain attributes share a
+    # constant severity, so days then recency decide.
+    arrange(desc(sev), desc(days), desc(last_date), .by_group = TRUE) |>
     slice(1) |>
     ungroup() |>
     mutate(field = unname(hd_attr_map[src])) |>

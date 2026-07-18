@@ -27,14 +27,15 @@
 # Files are saved with RCRAInfo-style names: NEI_POINT_0.parquet, NEI_POINT_1,
 # ... per year (index follows the region-group order for that year).
 
+# Set the output root and the S3 bucket prefix.
 out_root <- "data/nei"
 base_url <- "https://dmap-data-commons-ord.s3.amazonaws.com/stewi/NEI%20Data%20Files/"
 
-# Each parquet is large; allow up to 1 hour per file.
+# Allow up to 1 hour per file; each parquet is large.
 options(timeout = 3600)
 
-# year -> parquet file name(s) (from config.yaml). Multiple files per year are
-# EPA region groupings that together make up the national point-source dataset.
+# Map each year to its parquet file name(s) (from config.yaml). Multiple files per
+# year are EPA region groupings that together make up the national point-source dataset.
 nei <- list(
   "2011" = c("nei_2011_regions_1_thru_5.parquet",
              "nei_2011_regions_6_thru_10_and_other.parquet"),
@@ -56,19 +57,26 @@ nei <- list(
              "sppd_rtr_31302.parquet", "sppd_rtr_31303.parquet")
 )
 
+# Download every parquet file for every year.
 for (year in names(nei)) {
+  # Create the year folder.
   out_dir <- file.path(out_root, year)
   dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
   files <- nei[[year]]
   for (i in seq_along(files)) {
+    # Build the destination name NEI_POINT_<i>.parquet.
     f    <- files[i]
     dest <- file.path(out_dir, sprintf("NEI_POINT_%d.parquet", i - 1L))
+    # Skip files already downloaded.
     if (file.exists(dest)) { cat("  exists, skip:", basename(dest), "\n"); next }
+    # Encode the file name (some contain spaces) and build the URL.
     url <- paste0(base_url, utils::URLencode(f))
     cat(sprintf("[NEI %s] %s\n", year, basename(dest)))
+    # Download the file, reporting a failure without stopping the loop.
     tryCatch(download.file(url, dest, mode = "wb", quiet = TRUE),
              error = function(e) cat("  download failed:", conditionMessage(e), "\n"))
   }
 }
 
+# Print the downloaded years as confirmation.
 cat("Done. Years in", out_root, ":", paste(list.files(out_root), collapse = ", "), "\n")

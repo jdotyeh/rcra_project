@@ -1,5 +1,7 @@
 # 00_setup
 
+Note: This folder has been verified.
+
 This is the first stage the master script runs, and it prepares the environment
 for everything that follows.
 

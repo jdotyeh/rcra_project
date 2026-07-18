@@ -27,7 +27,7 @@ when no such link exists, so a reader should expect some handlers to carry no
 registry identifier and should not read an empty value as an error.
 
 This link is what would let the hazardous waste panels be joined to the
-supplementary datasets in `data/`, the toxics release inventory, the emissions
+diagnostics inventories in `code/diagnostics/`, the toxics release inventory, the emissions
 inventory, the greenhouse gas records, the power plant database, and the discharge
 monitoring reports, since those datasets key on the registry identifier or on
 program numbers the registry ties together. Because a single physical site can
