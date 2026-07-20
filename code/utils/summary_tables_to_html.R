@@ -100,10 +100,11 @@ sheet_html <- function(wb, sheet) {
 
   if (sheet == "Categorical") {
     ncols <- 6; widths <- c(180, 117, 100, 154, 52, 70); datacols <- 2:6
+  } else if (sheet == "Quantitative") {
+    ncols <- 7; datacols <- 2:7; widths <- c(145, 80, 62, 100, 100, 100, 100)
   } else {
-    ncols <- 7; datacols <- 2:7
-    widths <- if (sheet == "Quantitative") c(145, 80, 62, 100, 100, 100, 100)
-              else c(180, rep(80, 6))
+    # Dummy: nine columns since the Unknown pair was added for the "U" code.
+    ncols <- 9; datacols <- 2:9; widths <- c(180, rep(80, 8))
   }
   nonempty  <- function(r) any(!is.na(v[r, datacols]))
   main_last <- max(which(vapply(seq_len(nrow(v)), nonempty, TRUE)))
@@ -297,7 +298,7 @@ br_items <- lapply(sprintf("Biennial Report %d", seq(2001, 2023, by = 2)), item)
 
 build_modular <- function()
   build_page("RCRAInfo Modular Summary Tables",
-             "Variable-level summaries of each RCRAInfo module's central table.",
+             "Every coded, dated, numeric, and indicator field of each RCRAInfo module master file.",
              modular_items, file.path(OUT_DIR, "Modular Summary Tables.html"))
 
 build_br <- function()

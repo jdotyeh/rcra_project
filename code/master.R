@@ -36,6 +36,15 @@ scripts <- sort(list.files("code/modules",
 # so exclude the orchestrator here to avoid doing that work twice.
 scripts <- scripts[!grepl("/build_panels\\.R$", scripts)]
 
+# Guard against being run from the wrong directory. The paths above are relative
+# to the repository root, so a different working directory quietly discovers no
+# scripts and the loop below would exit as a success having done nothing. Fail
+# loudly instead of pretending the pipeline ran.
+if (length(scripts) == 0) {
+  stop("No scripts found under code/modules/. Run master.R from the repository root.",
+       call. = FALSE)
+}
+
 for (s in scripts) {
   cat("\n========", s, "========\n")
   source(s, local = new.env())

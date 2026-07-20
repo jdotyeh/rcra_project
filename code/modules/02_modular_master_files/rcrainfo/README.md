@@ -1,5 +1,7 @@
 # 02_modular_master_files
 
+Note: This folder has been verified (Jul 19).
+
 This stage turns each RCRAInfo module into a single analysis ready master file.
 Each script takes the module's central table and joins it to the module's
 dimension tables, so that one wide file carries the whole module. On top of the

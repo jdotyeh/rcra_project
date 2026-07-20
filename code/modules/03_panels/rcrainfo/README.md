@@ -1,9 +1,11 @@
 # 03_panels
 
+Note: This folder has been verified (Jul 19).
+
 This stage builds facility panels from the module master files and the Biennial
-Report. Every panel attaches the EPA Facility Registry Service identifier by
-linking the RCRAInfo handler identifier through the Program Links file, so the
-manual FRS download described in the download stage must be in place first.
+Report. Every panel attaches the EPA FRS identifier by
+linking the RCRAInfo handler identifier through the Program Links file, which
+the download stage's `frs` module downloads into `data/frs/`.
 
 ## Building just the panels
 
@@ -14,13 +16,13 @@ the rest of the project. From the repository root, run
 Rscript code/modules/03_panels/rcrainfo/build_panels.R
 ```
 
-It runs setup, downloads the RCRAInfo tables only if the raw inputs are missing,
-builds the Handler and Compliance master files only if they are missing, and then
-builds the four panels. It stops early with a clear message if the manual FRS file
-is not in place. It does not run the descriptive summary script, which is
-optional and can be run on its own afterward. The full-project master script,
-`code/master.R`, also builds the panels as its final stage and deliberately skips
-this shortcut so the work is not done twice.
+It runs setup, downloads the FRS Program Links file and the RCRAInfo tables only
+if the raw inputs are missing, builds the Handler and Compliance master files
+only if they are missing, and then builds the four panels. It does not run the
+descriptive summary script, which is optional and can be run on its own
+afterward. The full-project master script, `code/master.R`, also builds the
+panels as its final stage and deliberately skips this shortcut so the work is
+not done twice.
 
 ## Scripts
 
@@ -29,19 +31,18 @@ parameters and calls them.
 
 `00_panel_functions.R` defines every shared function. Running it on its own only
 defines them. The generic helpers serve all four panels: `read_frs_links()`
-attaches the Facility Registry Service identifier, `join_distinct()` and
+attaches the FRS identifier, `join_distinct()` and
 `last_known()` collapse multi-valued fields, and `write_panel()` writes a panel
 CSV with an optional typed `.rds` twin. The Biennial Report machinery, ending in
 `build_br_panel()`, builds the facility-cycle panels, and its three-tier
 conflict-resolution design is documented in the file.
 
 `01_panel_2015_2023_balanced.R` runs `build_br_panel(balanced = TRUE)`: the
-balanced facility cycle panel of handlers recognized in the National Biennial
-Report as large quantity generators or as treatment, storage, and disposal
-facilities in all five cycles from 2015 through 2023. Its header documents the
-panel column by column. `02_panel_2015_2023_unbalanced.R` runs the same builder
-with `balanced = FALSE`, keeping every handler recognized in at least one cycle,
-a strict superset built by the same rules.
+balanced facility cycle panel of handlers recognized in the Biennial Report as
+LQGs or as TSDFs in all five cycles from 2015 through 2023. Its header documents
+the panel column by column. `02_panel_2015_2023_unbalanced.R` runs the same
+builder with `balanced = FALSE`, keeping every handler recognized in at least one
+cycle, a strict superset built by the same rules.
 
 `03_panel_eval_2015_2023.R` builds a balanced facility month panel of compliance
 evaluations from the Compliance master file, and `04_panel_enf_2015_2023.R` builds
@@ -57,7 +58,7 @@ exists.
 ## What it reads and writes
 
 The panels read the Biennial Report tables under `data/rcrainfo/br/`, the Handler
-and Compliance master files under `output/modular_master_files/`, and the manual
+and Compliance master files under `output/modular_master_files/`, and
 `data/frs/FRS_PROGRAM_LINKS.csv`. Each panel is written under `output/panels/` in
 its own subfolder, and every panel subfolder carries a README that documents the
 panel column by column. The panels are small enough to be committed with the
@@ -68,11 +69,10 @@ repository.
 The panels are shaped by program rules, and three of them matter most. The
 Biennial Report covers odd-numbered data years, which is why the cycles are 2015,
 2017, 2019, 2021, and 2023 and why the code classifies a handler into a cycle by
-its report cycle. The definitions of a large quantity generator and of a
-treatment, storage, and disposal facility decide who enters the balanced and
-unbalanced panels. The division of authority between EPA and the states is why the
-enforcement panel splits actions into state and federal and why organizational
-codes keep their state prefix. These points are developed in the
+its report cycle. The definitions of an LQG and of a TSDF decide who enters the
+balanced and unbalanced panels. The division of authority between EPA and the
+states is why the enforcement panel splits actions into state and federal and why
+organizational codes keep their state prefix. These points are developed in the
 [biennial report](../../../../docs/institutional/01_biennial_report.md),
 [generators and handlers](../../../../docs/institutional/02_generators_and_handlers.md),
 [compliance and enforcement](../../../../docs/institutional/03_compliance_and_enforcement.md),

@@ -1,6 +1,6 @@
 # echo_rcra_pipeline Download
 
-Note: This folder has been verified.
+Note: This folder has been verified (Jul 17).
 
 This source is the EPA ECHO RCRA pipeline dataset, which records compliance
 monitoring activities (CMAs) together with the violations and enforcement actions linked

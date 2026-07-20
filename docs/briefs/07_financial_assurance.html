@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Financial assurance - RCRA Regulatory Data Infrastructure</title>
+<meta name="description" content="The requirement that a facility prove in advance it can pay to close and to care for the site afterwards."/>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='3' fill='%23232D4B'/%3E%3Crect x='0' y='27' width='32' height='5' fill='%23E57200'/%3E%3Ctext x='16' y='22' font-family='Georgia,serif' font-size='19' fill='white' text-anchor='middle'%3ER%3C/text%3E%3C/svg%3E"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@300;400;500;600;700&family=Lora:wght@400;500;600;700&display=swap"/>
+<link rel="stylesheet" href="../assets/site.css"/>
+</head>
+<body>
+<header class="masthead"><div class="wrap"><p class="eyebrow">Resource Conservation and Recovery Act</p><h1 class="mast-title">RCRA Regulatory Data Infrastructure</h1><p class="mast-sub">Facility-level data on hazardous waste, assembled from public EPA sources.</p></div></header>
+<nav class="mnav"><div class="wrap mnav-in"><a href="../index.html#pipeline">Pipeline</a><a href="../index.html#data">Data</a><a href="../index.html#outputs">Outputs</a><a href="../briefs.html" class="on">Briefs</a><a href="../state-reporting.html">State Reporting</a><a class="ext" href="https://github.com/jdotyeh/rcra_project" target="_blank" rel="noopener">Source</a></div></nav>
+<section class="sec plainhead"><div class="wrap"><p class="crumb"><a href="../index.html">Overview</a> / <a href="../briefs.html">Briefs</a> / Financial assurance</p><h2 class="page-h">Financial assurance</h2><p class="page-lede">The requirement that a facility prove in advance it can pay to close and to care for the site afterwards.</p></div></section>
+<section class="brief"><div class="wrap"><div class="artgrid"><article class="art"><h2 id="what-it-is">What it is</h2>
+<p>A facility that treats, stores, or disposes of hazardous waste must prove in advance that it can pay to close safely and, for a disposal facility, to care for the site long after it closes. The requirement exists so that the cost of cleanup does not fall on the public if a facility goes bankrupt or walks away. It has two sides. The facility estimates the cost of the work it must be able to fund, which includes closure, post-closure care, and in some cases liability for harm to others. <mark class="hl-g">The facility then backs that estimate with an approved funding mechanism, such as a trust fund, a surety bond, a letter of credit, an insurance policy, or a financial test in which a large company demonstrates the strength to self-insure.</mark></p>
+<h2 id="implications-for-the-data">Implications for the data</h2>
+<p>The Financial Assurance master file in <code>code/modules/02_modular_master_files/</code> joins the cost estimate to the mechanism that funds it, so one side of the record says what a facility must be able to pay for and the other says how that money is guaranteed. <mark class="hl-y">Reading the two together is the point, because a large cost estimate means something different depending on whether it is backed by cash in a trust or by a corporate financial test.</mark> The project builds this master file but does not build a financial assurance panel.</p><nav class="artnav"><a class="pv" href="06_permitting_and_closure.html"><span class="dir">&larr; Previous</span>Permitting, closure, and post-closure</a><a class="nx" href="08_waste_import_export.html"><span class="dir">Next &rarr;</span>Waste import and export</a></nav></article><aside class="toc"><h4>On this page</h4><a href="#what-it-is">What it is</a><a href="#implications-for-the-data">Implications for the data</a></aside></div></div></section>
+<div class="footlogo"><div class="wrap footlogo-in"><img class="batten" src="../assets/batten-logo.png" width="850" height="147" alt="University of Virginia, Frank Batten School of Leadership and Public Policy"/><a class="footlogo-link" href="https://github.com/jdotyeh/rcra_project" target="_blank" rel="noopener">Replication package &nearr;</a></div></div>
+<footer class="footbar"><div class="wrap"><p>All inputs are public U.S. federal data published by the EPA and in the public domain. The pipeline downloads the current release of each dataset, so a fresh run reflects the latest EPA vintage.</p><p class="footbar-meta">Code under the repository LICENSE &middot; <a href="https://github.com/jdotyeh/rcra_project" target="_blank" rel="noopener">source and README</a> &middot; built from the repository&rsquo;s own outputs &middot; generated July 20, 2026</p></div></footer>
+</body>
+</html>
+

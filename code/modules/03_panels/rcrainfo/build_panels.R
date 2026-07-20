@@ -1,11 +1,12 @@
 # =============================================================================
 # FILE:     build_panels.R
 # PURPOSE:  Build the RCRA facility panels end to end, running only the stages
-#           the panels depend on. It runs setup, downloads the RCRAInfo tables if
-#           the raw inputs are missing, builds the Handler and Compliance master
-#           files if they are missing, and then builds the four panels. This is a
-#           shortcut for the panel outputs; code/master.R runs the full pipeline.
-# INPUTS:   data/frs/FRS_PROGRAM_LINKS.csv (manual, see the download README);
+#           the panels depend on. It runs setup, downloads the FRS Program Links
+#           file and the RCRAInfo tables if the raw inputs are missing, builds
+#           the Handler and Compliance master files if they are missing, and
+#           then builds the four panels. This is a shortcut for the panel
+#           outputs; code/master.R runs the full pipeline.
+# INPUTS:   data/frs/FRS_PROGRAM_LINKS.csv (downloaded if missing);
 #           data/rcrainfo/{hd,ce,br}/ raw tables
 # OUTPUTS:  output/panels/BR_PANEL_2015_2023_BALANCED/,
 #           output/panels/BR_PANEL_2015_2023_UNBALANCED/,
@@ -30,16 +31,14 @@ run <- function(path) {
 # Installs and loads packages and creates the output folders.
 run("code/modules/00_setup/00_setup.R")
 
-# ---- Manual input check ---------------------------------------------------
-# The FRS Program Links file is the one input not downloaded by code. Stop early
-# with a clear message rather than failing deep inside a panel script.
+# ---- Stage 1a: FRS Program Links ------------------------------------------
+# Every panel attaches the FRS REGISTRY_ID through this file. Download it only
+# when it is absent, because the archive is about a gigabyte.
 frs_file <- "data/frs/FRS_PROGRAM_LINKS.csv"
-if (!file.exists(frs_file)) {
-  stop(paste0(
-    "Missing ", frs_file, ". This file is not downloaded by code. Obtain the FRS ",
-    "national Program Links file and place it there before building the panels ",
-    "(see code/modules/01_download/README.md)."
-  ))
+if (file.exists(frs_file)) {
+  cat("\n", frs_file, " present; skipping download.\n", sep = "")
+} else {
+  run("code/modules/01_download/frs/01_download_data.R")
 }
 
 # ---- Stage 1: raw RCRAInfo tables -----------------------------------------

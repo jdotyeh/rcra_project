@@ -8,7 +8,7 @@
 #           workbooks under output/summary_tables/
 # AUTHOR:   Jason Ye
 # CREATED:  2026-07-07
-# UPDATED:  2026-07-07
+# UPDATED:  2026-07-19
 # =============================================================================
 
 # Shared engine for the RCRAInfo "<Module> Summary Tables.xlsx" workbooks.
@@ -23,6 +23,16 @@
 # gray (FF666666); overview band green (B5E6A2); categorical header light green
 # (D2F3C6); quantitative header blue (A6C9EC); dummy header gold (FFD966); thin
 # black grid; merged variable blocks; "%" one decimal; dates yyyy-mm-dd.
+#
+# The module specs cover every column of their master file that carries a coded,
+# dated, numeric, or indicator value, so the engine handles the edge cases that
+# full coverage brings. A column that is blank on every row still gets a
+# categorical block, a quantitative column with no parseable value leaves its
+# four statistic cells empty, and a category value longer than 60 characters has
+# its middle elided so a semicolon-separated code list cannot stretch across the
+# sheet while two lists that share a long prefix stay distinguishable.
+# Whatever a spec leaves out is counted in the overview band and named one by
+# one in a note block under the Categorical table.
 #
 # The workbooks are compiled into two standalone HTML files (a full table of
 # contents, all tables in the house look) by code/utils/summary_tables_to_html.R.
@@ -129,10 +139,16 @@ build_module_summary <- function(data, all_cols, out_file, id_col, temporal_col,
   # columns present in the source file but not summarized (and not used as a
   # description source); listed by name in a note block under the Categorical tab.
   dropped <- setdiff(all_cols, c(summarized, desc_cols, id_col))
-  # default: a concise count + broad categories (override via `not_summarized`).
+  # default: a count plus the rule that produced it (override via `not_summarized`).
+  # Every remaining column is summarized, so the dropped set is exactly the
+  # columns the rule excludes; they are named one by one in a note block below
+  # the Categorical table.
   if (is.null(not_summarized)) {
     not_summarized <- sprintf(
-      "%d other columns not summarized (identifiers, names, and descriptions / free-text fields).",
+      paste("%d other columns are not summarized because they hold record identifiers,",
+            "personal names and staff identifiers, correspondence addresses and contact",
+            "details, free-text notes, or the description text paired with a code that is",
+            "summarized here. They are named below the table."),
       length(dropped))
   }
 
@@ -140,12 +156,24 @@ build_module_summary <- function(data, all_cols, out_file, id_col, temporal_col,
   build_cat_block <- function(s) {
     x <- data[[s$col]]; x[x == ""] <- NA
     n_miss <- sum(is.na(x)); n_cat <- n_distinct(x, na.rm = TRUE)
+    # A column that is blank on every row still gets a block, so the reader sees
+    # that the variable exists and carries nothing rather than seeing no row.
+    if (n_cat == 0) {
+      return(list(name = s$name, desc = s$desc,
+                  miss = sprintf("100%%\n(%d)", n_miss), ncat = 0L,
+                  vals = "(blank on every row)", pct = 0, N = 0L, active = FALSE))
+    }
     fr    <- tibble(value = x) |> filter(!is.na(value)) |> count(value, sort = TRUE)
     shown  <- slice_head(fr, n = topk)
     n_rest <- n_cat - nrow(shown)
     # if exactly one category would fall into "All Other", name it instead
     if (n_rest == 1) { shown <- slice_head(fr, n = topk + 1L); n_rest <- 0L }
-    vals  <- apply_labels(shown$value, s$labels); Ns <- shown$n
+    # Some coded columns hold semicolon-separated lists (waste codes, Basel
+    # codes) that run to hundreds of characters. Cap the displayed value so one
+    # long category cannot stretch across the sheet, cutting the middle rather
+    # than the tail so that two lists sharing a long prefix stay distinguishable.
+    vals  <- apply_labels(str_trunc(shown$value, 60, side = "center"), s$labels)
+    Ns    <- shown$n
     if (n_rest > 0) {
       vals <- c(vals, sprintf("All Other (%d)", n_rest))
       Ns   <- c(Ns, sum(fr$n) - sum(shown$n))
@@ -158,35 +186,44 @@ build_module_summary <- function(data, all_cols, out_file, id_col, temporal_col,
   cat_blocks <- map(cat_spec, build_cat_block)
 
   # ---- quantitative rows ----
+  # A column with no parseable value anywhere has no quantiles to report, so the
+  # four statistic cells stay blank and only the N and % missing columns fill in.
   q_date <- function(v) {
     d <- ymd(data[[v]], quiet = TRUE); nm <- sum(is.na(d))
-    q <- quantile(d, c(0, .05, .95, 1), na.rm = TRUE, type = 1)
+    q <- if (nm == n_total) rep(NA, 4) else quantile(d, c(0, .05, .95, 1), na.rm = TRUE, type = 1)
     list(name = v, N = n_total - nm, miss = round(100 * nm / n_total, 1), stats = q, date = TRUE)
   }
   q_num <- function(v, dg) {
     x <- suppressWarnings(as.numeric(data[[v]])); nm <- sum(is.na(x))
-    q <- quantile(x, c(0, .05, .95, 1), na.rm = TRUE)
+    q <- if (nm == n_total) rep(NA_real_, 4) else quantile(x, c(0, .05, .95, 1), na.rm = TRUE)
     list(name = v, N = n_total - nm, miss = round(100 * nm / n_total, 1), stats = round(q, dg), date = FALSE)
   }
   quant_rows <- c(map(quant_dates, q_date), imap(quant_nums, ~ q_num(.y, .x)))
 
   # ---- dummy rows ----
-  dummy_stat <- function(yes, no, miss_n) {
+  # Indicators are accepted in both codings: 1/0 (the master files) and Y/N
+  # (the raw Biennial Report tables). "U" (unknown) gets its own column pair,
+  # so an unknown never counts as a No.
+  dummy_stat <- function(yes, no, unk, miss_n) {
     yn <- sum(yes, na.rm = TRUE); nn <- sum(no, na.rm = TRUE)
+    un <- sum(unk, na.rm = TRUE)
     c(miss_n, round(100 * miss_n / n_total, 2),
-      yn, round(100 * yn / n_total, 2), nn, round(100 * nn / n_total, 2))
+      yn, round(100 * yn / n_total, 2), nn, round(100 * nn / n_total, 2),
+      un, round(100 * un / n_total, 2))
   }
   dummy_names <- character(); dummy_vals <- list()
   for (v in flag_simple) {
     x <- data[[v]]; x[x == ""] <- NA
     dummy_names <- c(dummy_names, v)
-    dummy_vals  <- c(dummy_vals, list(dummy_stat(x == "Y", x == "N", sum(is.na(x)))))
+    dummy_vals  <- c(dummy_vals, list(dummy_stat(x %in% c("Y", "1"),
+                                                 x %in% c("N", "0"),
+                                                 x == "U", sum(is.na(x)))))
   }
   for (v in names(flag_composite)) {
     x <- data[[v]]; x[x == ""] <- NA
     act <- str_detect(x, flag_composite[[v]])
     dummy_names <- c(dummy_names, v)
-    dummy_vals  <- c(dummy_vals, list(dummy_stat(act, !act, sum(is.na(act)))))
+    dummy_vals  <- c(dummy_vals, list(dummy_stat(act, !act, FALSE, sum(is.na(act)))))
   }
 
   # ===========================================================================
@@ -234,7 +271,7 @@ build_module_summary <- function(data, all_cols, out_file, id_col, temporal_col,
   add_missing_notes <- function(sheet, start_row, end_col, notes)
     add_note_block(sheet, start_row, end_col, "Notes on missing values:", notes)
 
-  COLS <- LETTERS[1:7]
+  COLS <- LETTERS[1:9]
 
   # -- Sheet 1: Categorical ---------------------------------------------------
   # overview band rows 1-5, column header row 6, variable blocks from row 7
@@ -328,24 +365,27 @@ build_module_summary <- function(data, all_cols, out_file, id_col, temporal_col,
   }
 
   # -- Sheet 3: Dummy (only if the module has binary indicator variables) -----
+  # "Unknown" columns carry the "U" code (see dummy_stat above); they read 0
+  # for modules whose flags are purely binary.
   if (length(dummy_vals)) {
     wb$add_worksheet("Dummy", grid_lines = TRUE)
-    dhdr <- c("Variables", "N Missing", "% Missing", "Yes N", "Yes %", "No N", "No %")
+    dhdr <- c("Variables", "N Missing", "% Missing", "Yes N", "Yes %",
+              "No N", "No %", "Unknown N", "Unknown %")
     for (j in seq_along(dhdr)) wb$add_data("Dummy", dhdr[j], dims = paste0(COLS[j], "1"), col_names = FALSE)
     for (i in seq_along(dummy_vals)) {
       rr <- i + 1L
       wb$add_data("Dummy", dummy_names[i], dims = paste0("A", rr), col_names = FALSE)
       v <- dummy_vals[[i]]
-      for (j in 1:6) wb$add_data("Dummy", v[j], dims = paste0(COLS[1 + j], rr), col_names = FALSE)
+      for (j in 1:8) wb$add_data("Dummy", v[j], dims = paste0(COLS[1 + j], rr), col_names = FALSE)
     }
-    dlast <- length(dummy_vals) + 1L; drng <- paste0("A1:G", dlast)
+    dlast <- length(dummy_vals) + 1L; drng <- paste0("A1:I", dlast)
     add_grid("Dummy", drng)
     wb$add_font("Dummy", dims = drng, name = .FONT, size = .SIZE, color = wb_color(hex = .ink_black))
-    wb$add_fill("Dummy", dims = "A1:G1", color = wb_color(hex = .col_dummy))
+    wb$add_fill("Dummy", dims = "A1:I1", color = wb_color(hex = .col_dummy))
     wb$add_cell_style("Dummy", dims = drng, vertical = "center")
     wb$set_col_widths("Dummy", cols = 1, widths = cw(28.5))
-    wb$set_col_widths("Dummy", cols = 2:7, widths = cw(12.6640625))
-    add_missing_notes("Dummy", dlast + 2L, "G", get_missing_notes("dummy"))
+    wb$set_col_widths("Dummy", cols = 2:9, widths = cw(12.6640625))
+    add_missing_notes("Dummy", dlast + 2L, "I", get_missing_notes("dummy"))
   }
 
   dir.create(dirname(out_file), recursive = TRUE, showWarnings = FALSE)

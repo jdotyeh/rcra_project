@@ -1,7 +1,7 @@
 # `CE_PANEL_2015_2023` Decision Record #
 
 ## Purpose ##
-This document records every construction decision behind `CE_PANEL_2015_2023.csv`, built by `code/modules/03_panels/rcrainfo/02_panel_eval_2015_2023.R`. Each decision states the outcome that was adopted, the details of how it is implemented, the considerations behind it where alternatives were worth weighing, and the measured impact on the data. Every count is taken from the actual input and output files, and every percentage states the baseline it is measured against. The decisions appear in the order in which they act on the data, so reading top to bottom follows the construction of the panel from `CE_MASTER.csv` to the final CSV.
+This document records every construction decision behind `CE_PANEL_2015_2023.csv`, built by `code/modules/03_panels/rcrainfo/03_panel_eval_2015_2023.R`. Each decision states the outcome that was adopted, the details of how it is implemented, the considerations behind it where alternatives were worth weighing, and the measured impact on the data. Every count is taken from the actual input and output files, and every percentage states the baseline it is measured against. The decisions appear in the order in which they act on the data, so reading top to bottom follows the construction of the panel from `CE_MASTER.csv` to the final CSV.
 
 ## Construction Decisions ##
 
@@ -45,9 +45,10 @@ This document records every construction decision behind `CE_PANEL_2015_2023.csv
 
 ### Decision 4. FRS Linkage ###
 - **Decision**
-    - Every facility-month carries `FRS_ID`, the EPA Facility Registry Service `REGISTRY_ID`, so the panel can be joined to other EPA programs through a common facility identifier.
+    - Every facility-month carries `FRS_ID`, the EPA FRS `REGISTRY_ID`, so the panel can be joined to other EPA programs through a common facility identifier.
 - **Details**
-    - The link comes from the FRS Program Links file (`data/frs/FRS_PROGRAM_LINKS.csv`), matching the facility's RCRAInfo identifier (`HANDLER_ID`) against `PGM_SYS_ID` on the rows where `PGM_SYS_ACRNM == "RCRAINFO"`.
+    - The link comes from the FRS Program Links file (`data/frs/FRS_PROGRAM_LINKS.csv`), matching the facility's RCRAInfo identifier (`HANDLER_ID`) against `PGM_SYS_ID` on the rows where `PGM_SYS_ACRNM == "RCRAINFO"`. The mapping is one-to-one from the handler to the registry identifier, so the join cannot fan out the panel.
+    - The reverse direction is not injective. A registry identifier names a physical site, and a site that re-registered under RCRA carries every one of its handler identifiers on the same `FRS_ID`. In the evaluation panel 649 registry identifiers are shared by two or more handlers, 1,358 handlers in all (1.55 percent of the 87,866); the widest case is `FRS_ID` 110000618546, carried by eight Pennsylvania handler identifiers. The enforcement panel holds 158 shared registry identifiers covering 323 of its 32,172 handlers (1.00 percent). Analyses keyed on `FRS_ID` should expect these clusters rather than assume one handler per registry identifier.
     - The mapping was verified to be strictly one-to-one on the RCRAINFO rows. The file holds 1,591,859 RCRAINFO rows with 1,591,859 distinct `PGM_SYS_ID` values and zero identifiers mapped to more than one `REGISTRY_ID`, so the join cannot fan out the panel.
     - `FRS_ID` is empty when no RCRAINFO link exists for the facility.
 - **Impact**
@@ -96,7 +97,7 @@ This document records every construction decision behind `CE_PANEL_2015_2023.csv
       | `CE_ANY_SNY`, `CE_TOTAL_SNY` | `EVAL_TYPE == "SNY"` | Significant non-complier determinations. |
       | `CE_ANY_CSE`, `CE_TOTAL_CSE` | `EVAL_TYPE == "CSE"` | Compliance schedule evaluations. |
       | `CE_ANY_OTHER`, `CE_TOTAL_OTHER` | every other `EVAL_TYPE` | The remaining evaluation types (FRR, FSD, SNN, FUI, CAV, CDI, OAM, CAC, GME, NIR). |
-      | `CE_ANY_VIOL`, `CE_EVALS_WITH_VIOL` | `FOUND_VIOLATION == "Y"` | Evaluations that discovered violations at the facility; `N` and `U` (undetermined) do not count. |
+      | `CE_ANY_VIOL`, `CE_EVALS_WITH_VIOL` | `FOUND_VIOLATION == "1"` | Evaluations that discovered violations at the facility; `CE_MASTER` codes the flag "1"/"0"/"U", and "0" and "U" (undetermined) do not count. |
 
     - Months holding more than one evaluation join the multi-valued descriptive fields with semicolons in evaluation start-date order, and the i-th `CE_END_YEAR` entry pairs with the i-th `CE_END_MONTH` entry.
     - Elements of `CE_MASTER.csv` not included in the panel, grouped, with the rationale for exclusion.

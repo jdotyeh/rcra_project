@@ -21,16 +21,19 @@ The `modules/` folder contains the pipeline itself, one subfolder per stage.
 - `01_download` downloads the three raw RCRA data sources and scrapes the
   matching data dictionaries. It has one subfolder per data source.
 - `02_modular_master_files` joins each RCRAInfo module into one analysis ready
-  master file.
+  master file, recoding binary indicators to 1/0 and undistinguishable
+  negatives to an explicit unknown code.
 - `03_panels` builds facility panels from the master files and the Biennial
   Report.
-- `04_summary_tables` builds a variable level summary workbook for the central
-  table of each RCRAInfo module and for each Biennial Report cycle.
+- `04_summary_tables` builds a variable level summary workbook for the master
+  file of each RCRAInfo module and for each Biennial Report cycle.
 
-The `diagnostics/` folder holds download scripts for five supplementary EPA
-inventories (TRI, NEI, GHGRP, eGRID, DMR) that are useful for extracting more
-information about the panel facilities but sit outside the pipeline, so the
-master script never runs them. See [diagnostics/README.md](diagnostics/README.md).
+The `diagnostics/` folder holds scripts that sit outside the pipeline, so the
+master script never runs them. It contains thirty RCRAInfo diagnostic scripts
+migrated from the exploratory repository that preceded this one, plus download
+scripts for five supplementary EPA inventories (TRI, NEI, GHGRP, eGRID, DMR)
+that are useful for extracting more information about the panel facilities.
+See [diagnostics/README.md](diagnostics/README.md).
 
 The `utils/` folder holds convenience scripts that support the project but are not
 part of the pipeline, so the master script never runs them. See

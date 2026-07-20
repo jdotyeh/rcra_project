@@ -1,6 +1,6 @@
 # echo_rcra Download
 
-Note: This folder has been verified.
+Note: This folder has been verified (Jul 17).
 
 This source is the EPA ECHO RCRAInfo dataset, a compliance and enforcement extract
 for hazardous waste sites that covers facilities, evaluations, violations,

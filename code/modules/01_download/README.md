@@ -1,6 +1,6 @@
 # 01_download
 
-Note: All three folders in this module have been verified.
+Note: All three RCRA folders in this module have been verified.
 
 This stage downloads the raw data the project is built on and scrapes the
 matching EPA data dictionaries. Every later stage reads from what this stage
@@ -15,20 +15,18 @@ details.
   dataset of monitoring activities with linked violations and enforcement.
 - [rcrainfo](rcrainfo/README.md) is the complete set of RCRAInfo module tables
   from the Hazardous Waste Information Platform.
+- [frs](frs/README.md) is the EPA FRS Program Links file,
+  which the panel stage uses to attach facility identifiers.
 
-Each source has a download script and a dictionary scraping script. The scripts
-write into `data/<source>/`, and each data folder carries its own README that
-describes the downloaded files. The raw data is not committed to the repository
-because of its size, and it is reproduced by running these scripts.
+Each RCRA source has a download script and a dictionary scraping script, and the
+FRS source has a download script only. The scripts write into `data/<source>/`,
+and each data folder carries its own README that describes the downloaded files.
+The raw data is not committed to the repository because of its size, and it is
+reproduced by running these scripts.
 
 Download scripts for five supplementary EPA inventories (TRI, NEI, GHGRP, eGRID,
 DMR) live outside the pipeline in [code/diagnostics](../../diagnostics/README.md);
 the master script does not run them.
-
-One input is not downloaded by code. The EPA Facility Registry Service Program
-Links file must be downloaded by hand and placed at
-`data/frs/FRS_PROGRAM_LINKS.csv`, where the panel stage uses it to attach facility
-identifiers. The [root README](../../../README.md) explains where to obtain it.
 
 ## Running
 

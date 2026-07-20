@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Corrective action - RCRA Regulatory Data Infrastructure</title>
+<meta name="description" content="The cleanup arm of the program and why its record is a series of events rather than a single entry."/>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='3' fill='%23232D4B'/%3E%3Crect x='0' y='27' width='32' height='5' fill='%23E57200'/%3E%3Ctext x='16' y='22' font-family='Georgia,serif' font-size='19' fill='white' text-anchor='middle'%3ER%3C/text%3E%3C/svg%3E"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@300;400;500;600;700&family=Lora:wght@400;500;600;700&display=swap"/>
+<link rel="stylesheet" href="../assets/site.css"/>
+</head>
+<body>
+<header class="masthead"><div class="wrap"><p class="eyebrow">Resource Conservation and Recovery Act</p><h1 class="mast-title">RCRA Regulatory Data Infrastructure</h1><p class="mast-sub">Facility-level data on hazardous waste, assembled from public EPA sources.</p></div></header>
+<nav class="mnav"><div class="wrap mnav-in"><a href="../index.html#pipeline">Pipeline</a><a href="../index.html#data">Data</a><a href="../index.html#outputs">Outputs</a><a href="../briefs.html" class="on">Briefs</a><a href="../state-reporting.html">State Reporting</a><a class="ext" href="https://github.com/jdotyeh/rcra_project" target="_blank" rel="noopener">Source</a></div></nav>
+<section class="sec plainhead"><div class="wrap"><p class="crumb"><a href="../index.html">Overview</a> / <a href="../briefs.html">Briefs</a> / Corrective action</p><h2 class="page-h">Corrective action</h2><p class="page-lede">The cleanup arm of the program and why its record is a series of events rather than a single entry.</p></div></section>
+<section class="brief"><div class="wrap"><div class="artgrid"><article class="art"><h2 id="what-it-is">What it is</h2>
+<p>Corrective action is the cleanup arm of the program. When hazardous waste or its constituents have been released into soil, groundwater, surface water, or air at a regulated facility, the facility is required to investigate and clean up the release. <mark class="hl-g">The obligation usually attaches to a treatment, storage, and disposal facility through its permit, and it can also be imposed by an order.</mark> The work runs as a sequence of stages that moves from an initial assessment, through investigation of the nature and extent of contamination, to selection of a remedy, its construction, and long-term operation until the cleanup goals are met.</p>
+<p>Because the work unfolds over years, the record is a series of events and milestones rather than a single entry. Each milestone marks a step reached at a facility or at a specific area of contamination within it.</p>
+<h2 id="implications-for-the-data">Implications for the data</h2>
+<p>The Corrective Action master file in <code>code/modules/02_modular_master_files/</code> is built from the central event table crossed with the module's linked dimensions, so a facility contributes many rows as its milestones and contaminated areas accumulate. <mark class="hl-y">A row is an event at an area, not a facility, so counting facilities means collapsing over events and areas rather than counting rows.</mark> The project builds a master file for this module but does not yet build a corrective action panel, so the master is the current endpoint for this module.</p><nav class="artnav"><a class="pv" href="04_state_authorization.html"><span class="dir">&larr; Previous</span>State authorization and federalism</a><a class="nx" href="06_permitting_and_closure.html"><span class="dir">Next &rarr;</span>Permitting, closure, and post-closure</a></nav></article><aside class="toc"><h4>On this page</h4><a href="#what-it-is">What it is</a><a href="#implications-for-the-data">Implications for the data</a></aside></div></div></section>
+<div class="footlogo"><div class="wrap footlogo-in"><img class="batten" src="../assets/batten-logo.png" width="850" height="147" alt="University of Virginia, Frank Batten School of Leadership and Public Policy"/><a class="footlogo-link" href="https://github.com/jdotyeh/rcra_project" target="_blank" rel="noopener">Replication package &nearr;</a></div></div>
+<footer class="footbar"><div class="wrap"><p>All inputs are public U.S. federal data published by the EPA and in the public domain. The pipeline downloads the current release of each dataset, so a fresh run reflects the latest EPA vintage.</p><p class="footbar-meta">Code under the repository LICENSE &middot; <a href="https://github.com/jdotyeh/rcra_project" target="_blank" rel="noopener">source and README</a> &middot; built from the repository&rsquo;s own outputs &middot; generated July 20, 2026</p></div></footer>
+</body>
+</html>
+

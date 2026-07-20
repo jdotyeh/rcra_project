@@ -138,13 +138,61 @@ ul.wc li::before{content:"\2013\00a0";color:var(--faint);}
 .wc-h{display:block;text-decoration:underline;text-underline-offset:2px;margin:0 0 4px;}
 .note{font-family:var(--sans);font-size:13px;color:var(--faint);margin:20px 0 0;max-width:74ch;}
 
-/* highlighter marks <e2><80><94> full-height translucent marker, as in the source document */
+/* highlighter marks - full-height translucent marker, as in the source document */
 .hl-g,.hl-y{color:inherit;-webkit-box-decoration-break:clone;box-decoration-break:clone;
   padding:.08em .18em;border-radius:.14em;}
 .hl-g{background:rgba(150,205,140,.55);}
 .hl-y{background:rgba(255,213,102,.6);}
 .hl-key{font-family:var(--sans);font-size:13px;color:var(--muted);margin:16px 0 0;}
 .hl-key .hl-g,.hl-key .hl-y{font-weight:500;color:var(--ink);}
+
+/* institutional briefs - index cards */
+.briefgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:18px;}
+.bcard{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--orange);
+  padding:22px 24px 24px;text-decoration:none;display:flex;flex-direction:column;
+  transition:border-color .15s,box-shadow .15s;}
+.bcard:hover{border-color:var(--navy);border-left-color:var(--orange);box-shadow:0 1px 0 var(--line);}
+.bcard .bnum{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--faint);}
+.bcard h3{margin:9px 0 8px;font-size:18px;color:var(--ink);}
+.bcard p{margin:0;font-family:var(--sans);font-size:14.5px;color:var(--muted);}
+
+/* institutional briefs - article page */
+.brief{padding:40px 0 76px;}
+.artgrid{display:grid;grid-template-columns:minmax(0,1fr) 232px;gap:52px;align-items:start;}
+article.art{max-width:72ch;}
+article.art h2{margin:44px 0 15px;font-size:clamp(20px,2.6vw,26px);
+  padding-bottom:9px;border-bottom:2px solid var(--orange);}
+article.art > h2:first-child{margin-top:0;}
+article.art p{margin:0 0 18px;font-family:var(--sans);font-size:16.5px;line-height:1.68;}
+article.art ul{margin:0 0 18px;padding-left:22px;font-family:var(--sans);font-size:16.5px;line-height:1.68;}
+article.art li{margin:0 0 7px;}
+article.art code{font-size:.84em;}
+article.art table{border-collapse:collapse;width:100%;margin:4px 0 26px;
+  font-family:var(--sans);font-size:14px;}
+article.art thead th{background:var(--gray-2);text-align:left;font-size:11.5px;letter-spacing:.04em;
+  text-transform:uppercase;color:var(--muted);font-weight:700;padding:12px 14px;
+  border-bottom:1px solid var(--line);}
+article.art tbody td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top;}
+article.art tbody tr:last-child td{border-bottom:0;}
+article.art table{border:1px solid var(--line);}
+
+/* in-page contents rail */
+aside.toc{position:sticky;top:74px;font-family:var(--sans);}
+aside.toc h4{margin:0 0 10px;font-family:var(--sans);font-size:11.5px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--faint);font-weight:700;}
+aside.toc a{display:block;font-size:13.5px;line-height:1.4;color:var(--muted);text-decoration:none;
+  padding:6px 0 6px 13px;border-left:2px solid var(--line);}
+aside.toc a:hover{color:var(--navy);border-left-color:var(--orange);}
+
+/* previous / next */
+.artnav{display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;
+  margin-top:52px;padding-top:24px;border-top:1px solid var(--line);}
+.artnav a{font-family:var(--sans);font-size:14px;text-decoration:none;color:var(--navy);max-width:44ch;}
+.artnav a:hover{color:var(--orange);}
+.artnav .dir{display:block;font-size:11px;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--faint);margin-bottom:3px;}
+.artnav .nx{text-align:right;margin-left:auto;}
 
 /* footer */
 .footlogo{background:var(--card);border-top:1px solid var(--line);}
@@ -161,15 +209,15 @@ ul.wc li::before{content:"\2013\00a0";color:var(--faint);}
 @media (max-width:900px){
   .grid-4{grid-template-columns:repeat(2,1fr);}
   .grid-3{grid-template-columns:1fr;}
+  .artgrid{grid-template-columns:1fr;gap:0;}
+  aside.toc{display:none;}
 }
 @media (max-width:640px){
   .wrap.footlogo-in{flex-direction:column;align-items:center;text-align:center;padding:30px 32px;}
 }
 @media (max-width:560px){
-  .wrap.footlogo-in{padding:30px 20px;}
-}
-@media (max-width:560px){
   .wrap{padding:0 20px;}
+  .wrap.footlogo-in{padding:30px 20px;}
   .grid-4{grid-template-columns:1fr;}
   .herocard{padding:30px 24px;}
   .mnav a.ext{display:none;}

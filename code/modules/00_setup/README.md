@@ -1,6 +1,6 @@
 # 00_setup
 
-Note: This folder has been verified.
+Note: This folder has been verified (Jul 17).
 
 This is the first stage the master script runs, and it prepares the environment
 for everything that follows.

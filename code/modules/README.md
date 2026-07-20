@@ -1,5 +1,7 @@
 # Modules
 
+Note: Only `04_summary_tables` folder has not been verified (3/4).
+
 The pipeline itself, one numbered folder per stage. `code/master.R` discovers
 every script in here and sources them in path order, so the numbering is the run
 order.

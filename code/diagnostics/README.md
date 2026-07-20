@@ -1,15 +1,22 @@
 # Diagnostics
 
-Download scripts for supplementary EPA data inventories that sit outside the
-replication pipeline. The master script does not run anything in this folder, and
-none of the pipeline stages read what these scripts download. They are kept
-because they are useful data inventories for extracting more information about
-the facilities in the panels, such as toxic releases, air emissions, greenhouse
-gases, power-plant characteristics, and water discharges, and each can be joined
-to the panels through facility identifiers.
+Scripts that sit outside the replication pipeline. The master script does not
+run anything in this folder, and none of the pipeline stages read what these
+scripts produce.
 
-There is one subfolder per inventory, and each has its own README with the
-details.
+The [rcrainfo](rcrainfo/README.md) subfolder holds thirty diagnostic scripts
+that probe, cross-check, and prototype against the RCRAInfo and ECHO data this
+repository already downloads. They were migrated from the exploratory
+repository that preceded this one, and their outputs go to
+`output/diagnostics/`.
+
+The remaining subfolders hold download scripts for supplementary EPA data
+inventories. They are kept because they are useful data inventories for
+extracting more information about the facilities in the panels, such as toxic
+releases, air emissions, greenhouse gases, power-plant characteristics, and
+water discharges, and each can be joined to the panels through facility
+identifiers. There is one subfolder per inventory, and each has its own README
+with the details.
 
 - [tri](tri/README.md) is the Toxics Release Inventory Basic Plus files.
 - [nei](nei/README.md) is the National Emissions Inventory point source data.
