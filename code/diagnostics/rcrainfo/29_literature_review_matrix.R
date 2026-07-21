@@ -1,3 +1,13 @@
+# =============================================================================
+# FILE:     29_literature_review_matrix.R
+# PURPOSE:  Literature review matrix — cross-tab which variables each literature paper on RCRA compliance uses.
+# INPUTS:   docs/misc/literature_review.csv (or equivalent input)
+# OUTPUTS:  console prints (and any figure files noted inline below)
+# AUTHOR:   Jason Ye
+# CREATED:  2026-07
+# UPDATED:  2026-07
+# =============================================================================
+
 # Literature review matrix for papers in literature/
 # Rows = papers (chronological); columns = review dimensions.
 # Output: output/literature_review_matrix.xlsx (+ .md twin)

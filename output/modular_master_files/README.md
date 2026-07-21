@@ -23,5 +23,5 @@ repository.
 
 Because a central record is crossed with several dimensions, one source record
 expands into many rows, so a row is a record-by-dimension combination rather than
-a facility. The [institutional briefs](../../docs/institutional/README.md) explain
+a facility. The [institutional briefs](../../docs/institutional_briefs/README.md) explain
 what each module represents.

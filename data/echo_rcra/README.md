@@ -20,4 +20,4 @@ written by `02_scrape_data_dictionary.R`.
 
 The program terms behind these tables, including what an evaluation, a violation,
 significant noncompliance, and an enforcement action mean, are covered in the
-[compliance and enforcement brief](../../docs/institutional/03_compliance_and_enforcement.md).
+[compliance and enforcement brief](../../docs/institutional_briefs/03_compliance_and_enforcement.md).

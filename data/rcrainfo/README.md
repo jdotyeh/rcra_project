@@ -23,5 +23,5 @@ describes its columns, written by `02_scrape_data_dictionary.R`, and EPA's
 central table and dozens of dimension tables.
 
 For what each module means as a piece of the program, start with the
-[institutional overview](../../docs/institutional/00_overview.md), which maps every
+[institutional overview](../../docs/institutional_briefs/00_overview.md), which maps every
 module to the brief that explains it.

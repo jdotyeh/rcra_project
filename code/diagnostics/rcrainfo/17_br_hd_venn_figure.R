@@ -1,3 +1,13 @@
+# =============================================================================
+# FILE:     17_br_hd_venn_figure.R
+# PURPOSE:  Venn diagram of BR vs HD handler overlap — render a PNG showing the three regions (BR-only, HD-only, both).
+# INPUTS:   data/rcrainfo/br/BR_REPORTING_*.csv, data/rcrainfo/hd/HD_HANDLER.csv
+# OUTPUTS:  console prints (and any figure files noted inline below)
+# AUTHOR:   Jason Ye
+# CREATED:  2026-07
+# UPDATED:  2026-07
+# =============================================================================
+
 library(ggplot2)
 library(ggforce)
 

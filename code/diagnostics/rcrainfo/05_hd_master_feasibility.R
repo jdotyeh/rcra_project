@@ -1,3 +1,13 @@
+# =============================================================================
+# FILE:     05_hd_master_feasibility.R
+# PURPOSE:  HD_MASTER build-feasibility check — inspect HD_HANDLER + linked tables for join-multiplication risks before the master-file stage runs.
+# INPUTS:   data/rcrainfo/hd/*.csv
+# OUTPUTS:  console prints (and any figure files noted inline below)
+# AUTHOR:   Jason Ye
+# CREATED:  2026-07
+# UPDATED:  2026-07
+# =============================================================================
+
 ## Feasibility check for a HANDLER-ID master file.
 ## Universe of facilities = distinct HANDLER ID in HD_HANDLER.csv.
 ## A facility stays ONE row in a cross-file master iff every OTHER module file

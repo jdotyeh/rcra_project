@@ -20,6 +20,7 @@
 # output/summary_tables/Biennial Report 2003 Summary Tables.xlsx.
 # Requires: tidyverse, lubridate, openxlsx2. Run from the repo root.
 
+# Load the shared summary-tables engine (loads tidyverse / lubridate / openxlsx2).
 source("code/modules/04_summary_tables/rcrainfo/00_function.R")
 
 br_root  <- "data/rcrainfo/br"
@@ -78,14 +79,20 @@ flag_simple <- c("GEN_ID_INCLUDED_IN_NBR", "GEN_WASTE_INCLUDED_IN_NBR",
                  "FEDERAL_WASTE", "WASTEWATER", "PRIORITY_CHEMICAL")
 
 # ---- Load + build -----------------------------------------------------------
+# Derive the column subset actually needed from the spec.
 need  <- needed_columns(cat_spec, quant_dates, quant_nums, flag_simple, id_col = id_col)
+# Cycle-specific BR_REPORTING file path.
 br_file <- file.path(br_root, sprintf("BR_REPORTING_%d.csv", year))
+# Header list, normalized to underscores so all_cols matches the engine spec column names.
 all_cols <- read_csv(br_file, n_max = 0, show_col_types = FALSE) |>
   names() |> str_replace_all(" ", "_")
+# The raw BR_REPORTING file ships column names with spaces; select on the
+# space-form and rename to underscores so the spec matches.
 br <- read_csv(br_file, col_select = all_of(str_replace_all(need, "_", " ")),
                col_types = cols(.default = col_character())) |>
   rename_with(~ str_replace_all(.x, " ", "_"))
 
+# Run the engine to compute the summaries and write the workbook.
 build_module_summary(
   data = br, all_cols = all_cols, out_file = out_file, id_col = id_col,
   temporal_col = "LAST_CHANGE",

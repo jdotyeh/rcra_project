@@ -1,3 +1,13 @@
+# =============================================================================
+# FILE:     11_br_facility_cycles_dedup.R
+# PURPOSE:  Biennial Report facility-cycle diagnostic (dedup edition) — the same counts as 10_br_facility_cycles.R, but with per-cycle deduplication applied first.
+# INPUTS:   data/rcrainfo/br/BR_REPORTING_*.csv
+# OUTPUTS:  console prints (and any figure files noted inline below)
+# AUTHOR:   Jason Ye
+# CREATED:  2026-07
+# UPDATED:  2026-07
+# =============================================================================
+
 suppressMessages(library(data.table))
 
 br <- fread("output/diagnostics/BR_distinct_facilities_by_year.csv", colClasses = "character")

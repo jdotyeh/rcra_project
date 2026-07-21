@@ -36,11 +36,14 @@
 # Shared master-file helpers: read_module(). Loads tidyverse.
 source("code/modules/02_modular_master_files/rcrainfo/00_function.R")
 
+# Raw WT module folder and the master output path.
 wt_dir   <- "data/rcrainfo/wt"
 out_file <- "output/modular_master_files/WT_EXPORTS_MASTER.csv"
 
+# Thin wrapper that fixes the WT folder for read_module().
 read_wt <- function(file) read_module(wt_dir, file)
 
+# Consent notices, one row per export-notice waste stream.
 notices <- read_wt("WT_NOTICES_EXPORTS.csv")
 
 # Stack every annual report on disk, keeping only the consent key and the actual
@@ -48,12 +51,15 @@ notices <- read_wt("WT_NOTICES_EXPORTS.csv")
 ar_files <- list.files(wt_dir, pattern = "^WT_AR_\\d{4}\\.csv$")
 annual <- map(ar_files, function(f) {
   read_wt(f) |>
+    # Keep only the consent key, the year, and the actual-quantity columns.
     transmute(NOTICE_ID, CONSENT_NUMBER,
               REPORT_YEAR = str_extract(f, "\\d{4}"),
               QUANTITY_ACTUAL, QUANTITY_UOM, SHIPMENTS_ACTUAL)
 }) |>
   list_rbind()
 
+# Attach the annual actuals to each consent; a consent reported in multiple
+# years expands to one row per report year.
 master <- notices |>
   left_join(annual, by = c("NOTICE_ID", "CONSENT_NUMBER"),
             relationship = "many-to-many")
@@ -87,4 +93,5 @@ master <- master |>
     REPORT_YEAR, QUANTITY_ACTUAL, QUANTITY_UOM, SHIPMENTS_ACTUAL
   )
 
+# Write the master with empty-string NAs.
 write_csv(master, out_file, na = "")

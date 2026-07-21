@@ -46,4 +46,4 @@ the scripts it contains, and the files it reads and writes. Start with the modul
 you are interested in. The replication instructions, data sources, and software
 requirements for the whole project live in the [root README](../README.md). For
 what the program terms mean and how they shape the data, see the
-[institutional briefs](../docs/institutional/README.md).
+[institutional briefs](../docs/institutional_briefs/README.md).

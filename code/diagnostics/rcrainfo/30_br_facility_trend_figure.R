@@ -1,3 +1,13 @@
+# =============================================================================
+# FILE:     30_br_facility_trend_figure.R
+# PURPOSE:  Biennial Report facility-count trend figure — render a bar / line chart of counts across the five 2015-2023 cycles.
+# INPUTS:   data/rcrainfo/br/BR_REPORTING_*.csv
+# OUTPUTS:  console prints (and any figure files noted inline below)
+# AUTHOR:   Jason Ye
+# CREATED:  2026-07
+# UPDATED:  2026-07
+# =============================================================================
+
 library(ggplot2)
 library(scales)
 

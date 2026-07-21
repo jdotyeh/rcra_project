@@ -1,3 +1,13 @@
+# =============================================================================
+# FILE:     04_hd_multi_handler_sites.R
+# PURPOSE:  Handler master multi-handler sites diagnostic — where a physical site (HANDLER_NAME + LOCATION_STREET1 + city + state + zip) hosts more than one HANDLER_ID.
+# INPUTS:   data/rcrainfo/hd/HD_HANDLER.csv
+# OUTPUTS:  console prints (and any figure files noted inline below)
+# AUTHOR:   Jason Ye
+# CREATED:  2026-07
+# UPDATED:  2026-07
+# =============================================================================
+
 # 04_hd_multi_handler_sites.R
 # -----------------------------------------------------------------------------
 # Goal: From HD_REPORTING, find physical facilities that share the SAME facility

@@ -28,6 +28,8 @@
 # a full pass takes hours. Supplementary-inventory download scripts under
 # code/diagnostics/ are also not discovered here (see code/diagnostics/README.md).
 
+# Walk code/modules/ recursively, keeping only .R files; sorting the paths
+# alphabetically gives the intended stage-by-stage run order.
 scripts <- sort(list.files("code/modules",
                            pattern = "\\.R$", full.names = TRUE, recursive = TRUE))
 
@@ -45,6 +47,8 @@ if (length(scripts) == 0) {
        call. = FALSE)
 }
 
+# Source each script in a fresh environment so their globals stay isolated;
+# the banner marks the boundary in the console log for easier debugging.
 for (s in scripts) {
   cat("\n========", s, "========\n")
   source(s, local = new.env())

@@ -29,13 +29,6 @@
 #                      FRS Program Links file on the RCRAInfo Handler ID
 #                      (PGM_SYS_ID where PGM_SYS_ACRNM == "RCRAINFO"). One
 #                      REGISTRY_ID per Handler ID; NA if no RCRAINFO link exists.
-#   HD_CONFLICTS       ";"-delimited list of the HD_* fields (panel names) that
-#                      carried >= 2 distinct values CLASSIFIED to the row's
-#                      report year (e.g. two FED_WASTE_GENERATOR codes filed for
-#                      2019). B/R source records classify by REPORT_CYCLE, all
-#                      others by receive year. Empty when nothing conflicts.
-#                      Replaces the old per-field HD_GENERATOR_CONF /
-#                      HD_TSDF_CONF booleans.
 #   BR_GENERATOR       "L" if any BR_REPORTING row that cycle has
 #                      CALCULATED_GENERATOR_STATUS == "L", else "N".
 #   BR_TSDF            1 if any row that cycle has MGMT_ID_INCLUDED_IN_NBR or
@@ -75,7 +68,7 @@
 #                        HD_LOCATION_LONGITUDE  <- LOCATION_LONGITUDE
 #                        NAICS4, NAICS6_1-4     <- NAICS_CODE (all NAICS_SEQ)
 #                        HD_GENERATOR           <- FED_WASTE_GENERATOR (1->L,2->S,3->VS;
-#                          same-year conflicts overridden by BR_GENERATOR)
+#                          independent of BR_GENERATOR, resolved by duration then severity)
 #                        HD_STATE_GENERATOR     <- STATE_WASTE_GENERATOR (ranked on the
 #                          federal hierarchy L=1>S=2>VS=3>N; non-convertible codes lowest)
 #                        HD_SHORT_TERM_GENERATOR<- SHORT_TERM_GENERATOR
@@ -127,8 +120,12 @@
 # Requires: tidyverse (incl. lubridate)
 # =============================================================================
 
+# Load the shared panel functions (loads tidyverse as a side effect) and every
+# constant table (severity maps, HD attribute map, output column order).
 source("code/modules/03_panels/rcrainfo/00_panel_functions.R")
 
+# Build the balanced BR panel end to end. balanced = TRUE means only handlers
+# recognized as LQG/TSDF in ALL five cycles are kept (5 rows per handler).
 build_br_panel(
   balanced = TRUE,
   out_file = "output/panels/BR_PANEL_2015_2023_BALANCED/BR_PANEL_2015_2023_BALANCED.csv")

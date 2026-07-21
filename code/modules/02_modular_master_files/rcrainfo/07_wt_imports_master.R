@@ -31,13 +31,18 @@
 # Shared master-file helpers: read_module(). Loads tidyverse.
 source("code/modules/02_modular_master_files/rcrainfo/00_function.R")
 
+# Raw WT module folder and the master output path.
 wt_dir   <- "data/rcrainfo/wt"
 out_file <- "output/modular_master_files/WT_IMPORTS_MASTER.csv"
 
+# Thin wrapper that fixes the WT folder for read_module().
 read_wt <- function(file) read_module(wt_dir, file)
 
+# Import notices, one row per import-notice waste stream; no annual-report
+# join because WIETS does not publish annual reports on the imports side.
 notices <- read_wt("WT_NOTICES_IMPORTS.csv")
 
+# Reorder columns to match the exports master's grouping.
 master <- notices |>
   select(
     # Notice identity
@@ -65,4 +70,5 @@ master <- notices |>
     BASEL_WASTE_CODES, EPA_WASTE_CODES
   )
 
+# Write the master with empty-string NAs.
 write_csv(master, out_file, na = "")

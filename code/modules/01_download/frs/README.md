@@ -6,7 +6,7 @@ This module downloads the EPA FRS Program Links file, the national
 cross-reference from program-system identifiers to FRS registry identifiers. The
 panel stage reads it to attach a registry identifier to each RCRAInfo handler,
 and the reasoning behind that link is set out in the
-[facility identifiers brief](../../../../docs/institutional/09_facility_identifiers.md).
+[facility identifiers brief](../../../../docs/institutional_briefs/09_facility_identifiers.md).
 
 ## Scripts
 

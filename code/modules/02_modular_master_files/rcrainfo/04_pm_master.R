@@ -39,9 +39,11 @@
 # Loads tidyverse.
 source("code/modules/02_modular_master_files/rcrainfo/00_function.R")
 
+# Raw PM module folder and the master output path.
 pm_dir   <- "data/rcrainfo/pm"
 out_file <- "output/modular_master_files/PM_MASTER.csv"
 
+# Thin wrapper that fixes the PM folder for read_module().
 read_pm <- function(file) read_module(pm_dir, file)
 
 # Event identity. PM_EVENT spells the handler / series keys HANDLER_ID /
@@ -51,6 +53,7 @@ event_tail <- c("EVENT_ACTIVITY_LOCATION", "EVENT_SEQ", "EVENT_AGENCY",
 # Process-unit-detail identity, shared by the detail, unit, and waste tables.
 unit_detail_keys <- c("UNIT_SEQ", "UNIT_DETAIL_SEQ")
 
+# Central event table; everything else hangs off it.
 event <- read_pm("PM_EVENT.csv")
 
 # Series attributes; prefix its responsible-person columns.
@@ -58,9 +61,11 @@ series <- read_pm("PM_SERIES.csv") |>
   rename(SERIES_RESPONSIBLE_PERSON_OWNER = RESPONSIBLE_PERSON_OWNER,
          SERIES_RESPONSIBLE_PERSON       = RESPONSIBLE_PERSON)
 
+# Event -> unit-detail link, and the unit-detail attributes (Y/N flags recoded).
 event_unit_detail <- read_pm("PM_EVENT_UNIT_DETAIL.csv")
 unit_detail       <- read_pm("PM_UNIT_DETAIL.csv") |>
   convert_indicators(c("STANDARDIZED_PERMIT_IND", "CURRENT_UNIT_DETAIL"))
+# Unit label and waste codes handled by the unit-detail.
 unit              <- read_pm("PM_UNIT.csv")
 unit_detail_waste <- read_pm("PM_UNIT_DETAIL_WASTE.csv")
 
@@ -131,4 +136,5 @@ master <- master |>
     SUBSEQUENT_MOD_EVENT_CODE
   )
 
+# Write the master with empty-string NAs.
 write_csv(master, out_file, na = "")

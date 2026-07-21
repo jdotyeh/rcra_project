@@ -1,23 +1,42 @@
+# =============================================================================
+# FILE:     01_echo_exploration.R
+# PURPOSE:  First-pass exploration of the ECHO RCRA pipeline data — facility
+#           counts, evaluation coverage, violation and enforcement shares, and
+#           the ViolSNC monthly history.
+# INPUTS:   data/echo_rcra_pipeline/PIPELINE_00_COMPLETE.csv,
+#           data/echo_rcra/RCRA_FACILITIES.csv,
+#           data/echo_rcra/RCRA_VIOSNC_HISTORY.csv
+# OUTPUTS:  console prints only
+# AUTHOR:   Jason Ye
+# CREATED:  2026-07-01
+# UPDATED:  2026-07-01
+# =============================================================================
+
+# Tidyverse for the reshape / summarize pipelines, lubridate for date parsing.
 library(tidyverse)
 library(lubridate)
 
 # ── Load data ─────────────────────────────────────────────────────────────────
 
+# PIPELINE_00_COMPLETE: one row per evaluation x violation x enforcement line.
 complete   <- read_csv("data/echo_rcra_pipeline/PIPELINE_00_COMPLETE.csv",
                        col_types = cols(REGISTRY_ID = col_character(),
                                         SOURCE_ID   = col_character(),
                                         .default    = col_character()))
 
+# RCRA_FACILITIES: one row per facility with universe and status flags.
 facilities <- read_csv("data/echo_rcra/RCRA_FACILITIES.csv",
                        col_types = cols(ID_NUMBER = col_character(),
                                         .default  = col_character()))
 
+# RCRA_VIOSNC_HISTORY: one row per facility x YYYYMM month with violation flags.
 viosnc     <- read_csv("data/echo_rcra/RCRA_VIOSNC_HISTORY.csv",
                        col_types = cols(ID_NUMBER = col_character(),
                                         YRMONTH   = col_character(),
                                         .default  = col_character()))
 
 # Parse dates
+# ECHO ships dates in mm/dd/yyyy; mdy() casts every column at once.
 complete <- complete |>
   mutate(across(c(EVAL_DATE, VIOL_DETERMINED_DATE, ACTUAL_RTC_DATE,
                   ENF_ACTION_DATE), ~ mdy(.x)))

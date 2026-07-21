@@ -32,12 +32,15 @@
 # output/summary_tables/WIETS Imports Module Summary Tables.xlsx.
 # Requires: tidyverse, lubridate, openxlsx2. Run from the repo root.
 
+# Load the shared summary-tables engine (loads tidyverse / lubridate / openxlsx2).
 source("code/modules/04_summary_tables/rcrainfo/00_function.R")
 
 wt_file  <- "output/modular_master_files/WT_IMPORTS_MASTER.csv"
 out_file <- "output/summary_tables/WIETS Imports Module Summary Tables.xlsx"
 
+# Read the master as character to preserve zero-padded codes.
 wt <- read_csv(wt_file, col_types = cols(.default = col_character()))
+# Full header list; the engine reports any columns not covered by the spec.
 all_cols <- names(wt)
 
 # ---- Embedded code dictionaries (no WIETS lookup tables ship with the data) --
@@ -107,6 +110,7 @@ quant_nums  <- c(WASTE_STREAM_NUMBER = 0L,
                  CONSENT_QUANTITY = 2L, CONSENT_SHIPMENTS = 0L)
 # no binary-indicator variables in WT_NOTICES_IMPORTS
 
+# Run the engine to compute the summaries and write the workbook.
 build_module_summary(
   data = wt, all_cols = all_cols, out_file = out_file, id_col = "IMPORTER_EPA_ID",
   temporal_col = "DETERMINATION_ISSUED_DATE",

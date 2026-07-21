@@ -30,8 +30,10 @@
 # output/summary_tables/CME Module Summary Tables.xlsx.
 # Requires: tidyverse, lubridate, openxlsx2. Run from the repo root.
 
+# Load the shared summary-tables engine (loads tidyverse / lubridate / openxlsx2).
 source("code/modules/04_summary_tables/rcrainfo/00_function.R")
 
+# Input master file and output workbook.
 ce_file  <- "output/modular_master_files/CE_MASTER.csv"
 out_file <- "output/summary_tables/CME Module Summary Tables.xlsx"
 
@@ -128,11 +130,15 @@ flag_simple <- c("FOUND_VIOLATION", "CITIZEN_COMPLAINT", "MULTIMEDIA_INSPECTION"
                  "SAMPLING", "NOT_SUBTITLE_C", "CA_COMPONENT", "FA_REQUIREMENT")
 
 # ---- Load (only the needed columns; the master ships underscore names) -------
+# Derive the column subset actually needed from the spec.
 need <- needed_columns(cat_spec, quant_dates, quant_nums, flag_simple, id_col = id_col)
+# all_cols is the master's full header list; the engine uses it to name dropped variables.
 all_cols <- read_csv(ce_file, n_max = 0, show_col_types = FALSE) |> names()
+# Read only the needed columns, as character to preserve zero-padded codes.
 ce <- read_csv(ce_file, col_select = all_of(need),
                col_types = cols(.default = col_character()))
 
+# Run the engine to compute the summaries and write the workbook.
 build_module_summary(
   data = ce, all_cols = all_cols, out_file = out_file, id_col = id_col,
   temporal_col = "EVAL_START_DATE",

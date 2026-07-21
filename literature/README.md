@@ -4,8 +4,8 @@ Background reading on hazardous waste regulation, enforcement, and the effects o
 both. These papers are not used by the code. They are here to orient a reader and
 to place the data in the questions researchers have asked of it, several of which
 turn on the federal and state enforcement themes in the
-[state authorization brief](../docs/institutional/04_state_authorization.md) and
-the [compliance and enforcement brief](../docs/institutional/03_compliance_and_enforcement.md).
+[state authorization brief](../docs/institutional_briefs/04_state_authorization.md) and
+the [compliance and enforcement brief](../docs/institutional_briefs/03_compliance_and_enforcement.md).
 
 | File | What it is |
 |------|------------|

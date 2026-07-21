@@ -30,6 +30,7 @@
 # Tables.xlsx.
 # Requires: tidyverse, lubridate, openxlsx2. Run from the repo root.
 
+# Load the shared summary-tables engine (loads tidyverse / lubridate / openxlsx2).
 source("code/modules/04_summary_tables/rcrainfo/00_function.R")
 
 fa_file  <- "output/modular_master_files/FA_MASTER.csv"
@@ -37,7 +38,9 @@ fa_dir   <- "data/rcrainfo/fa"
 out_file <- "output/summary_tables/Financial Assurance Module Summary Tables.xlsx"
 
 # ---- Load (small single-file master) ----------------------------------------
+# Read the master as character to preserve zero-padded codes.
 fa <- read_csv(fa_file, col_types = cols(.default = col_character()))
+# Full header list; the engine reports any columns not covered by the spec.
 all_cols <- names(fa)
 
 # ---- Common code labels (provided) ------------------------------------------
@@ -97,6 +100,7 @@ quant_nums  <- c(COST_COVERAGE_SEQ = 0L, COST_ESTIMATE_AMOUNT = 2L,
                  FACE_VALUE_AMOUNT = 2L, FACILITY_FACE_VALUE_AMOUNT = 2L)
 flag_simple <- c("CURRENT_COST_ESTIMATE", "CURRENT_MECHANISM_DETAIL")
 
+# Run the engine to compute the summaries and write the workbook.
 build_module_summary(
   data = fa, all_cols = all_cols, out_file = out_file, id_col = "HANDLER_ID",
   temporal_col = "COST_ESTIMATE_DATE",

@@ -1,3 +1,13 @@
+# =============================================================================
+# FILE:     18_br_filter_flow_figure.R
+# PURPOSE:  BR filter-flow diagram — render the funnel from all BR handlers down to the panel-eligible subset.
+# INPUTS:   data/rcrainfo/br/BR_REPORTING_*.csv
+# OUTPUTS:  console prints (and any figure files noted inline below)
+# AUTHOR:   Jason Ye
+# CREATED:  2026-07
+# UPDATED:  2026-07
+# =============================================================================
+
 library(ggplot2)
 
 hd_fill   <- "#ffd166"

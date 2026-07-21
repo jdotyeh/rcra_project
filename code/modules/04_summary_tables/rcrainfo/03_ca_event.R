@@ -27,13 +27,16 @@
 # output/summary_tables/Corrective Action Module Summary Tables.xlsx.
 # Requires: tidyverse, lubridate, openxlsx2. Run from the repo root.
 
+# Load the shared summary-tables engine (loads tidyverse / lubridate / openxlsx2).
 source("code/modules/04_summary_tables/rcrainfo/00_function.R")
 
 ca_file  <- "output/modular_master_files/CA_MASTER.csv"
 out_file <- "output/summary_tables/Corrective Action Module Summary Tables.xlsx"
 
 # ---- Load (CA_MASTER is small; single file) ----------------------------------
+# Read the master as character to preserve zero-padded codes.
 ca <- read_csv(ca_file, col_types = cols(.default = col_character()))
+# Full header list; the engine reports any columns not covered by the spec.
 all_cols <- names(ca)
 
 agency_labels <- c(
@@ -133,6 +136,7 @@ flag_simple <- c("ENTIRE_FACILITY_IND", "REGULATED_UNIT_IND",
                  "AIR_RELEASE_IND", "GROUNDWATER_RELEASE_IND",
                  "SOIL_RELEASE_IND", "SURFACE_WATER_RELEASE_IND")
 
+# Run the engine to compute the summaries and write the workbook.
 build_module_summary(
   data         = ca,
   all_cols     = all_cols,

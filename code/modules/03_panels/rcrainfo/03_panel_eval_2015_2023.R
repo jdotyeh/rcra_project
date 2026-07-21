@@ -9,7 +9,7 @@
 #           (+ .rds twin with exact column types)
 # AUTHOR:   Jason Ye
 # CREATED:  2026-07-10
-# UPDATED:  2026-07-16
+# UPDATED:  2026-07-21
 # =============================================================================
 #
 # Facility-month panel of RCRA compliance evaluations built from CE_MASTER,
@@ -50,19 +50,26 @@
 #     CE_EVAL_STATE      <- EVAL_ACTIVITY_LOCATION, distinct values in
 #                           evaluation start-date order
 #     CE_EVAL_AGENCY     <- EVAL_AGENCY, distinct values in start-date order
-#     CE_EVAL_RESP_PERSON<- EVAL_RESPONSIBLE_PERSON, distinct codes in start-date
-#                           order (blank on ~12.8% of evaluations)
 #     CE_EVAL_SUBORG     <- EVAL_SUBORGANIZATION, distinct codes, each prefixed
 #                           with its own evaluation state as STATE-SUBORG (e.g.
 #                           IL-CD); blank on the ~35.6% of evaluations that carry
 #                           no suborganization code
-#     CE_EVAL_LAST_CHANGE<- max EVAL_LAST_CHANGE over the month's evaluations (the
-#                           most recent evaluation-record change stamp)
-#     CE_END_YEAR        <- year(NOC_DATE), one entry per evaluation in the
-#     CE_END_MONTH       <- month(NOC_DATE) month that carries a notice-of-
-#                           compliance date (~2.6% of evaluations do), joined
-#                           in start-date order; the i-th CE_END_YEAR entry
-#                           pairs with the i-th CE_END_MONTH entry.
+#     CE_EVAL_DATE_NUM   Count of distinct end dates in the month, so a reader
+#                           knows how many entries CE_EVAL_DATE holds without
+#                           splitting it. 0 on months whose evaluations carry no
+#                           notice-of-compliance date at all.
+#     CE_EVAL_DATE       <- NOC_DATE, the distinct dates on which the month's
+#                           evaluations ended, meaning the facility was notified
+#                           that no violation was found or that the violations
+#                           found had returned to compliance. Distinct values in
+#                           evaluation start-date order, written as YYYYMMDD.
+#                           Only ~2.6% of evaluations carry one, so the field is
+#                           blank on most months, and two evaluations that ended
+#                           on the same day collapse to a single entry, so the
+#                           entry count is not the number of evaluations that
+#                           ended. The date can fall in a later month than the
+#                           row, since an evaluation started in the month can end
+#                           long afterwards.
 #
 #   Counts and indicators (0 on months with no evaluation; CE_ANY_* = 1 if
 #   the matching CE_TOTAL_* / CE_EVALS_WITH_VIOL > 0, else 0):
@@ -89,8 +96,6 @@
 #   codes these flags 1/0):
 #     CE_ANY_CITIZEN_COMPLAINT      <- CITIZEN_COMPLAINT     (~2.6% coded 1)
 #     CE_ANY_MULTIMEDIA_INSPECTION  <- MULTIMEDIA_INSPECTION (~2.6% coded 1)
-#     CE_ANY_SAMPLING               <- SAMPLING              (~0.2% coded 1)
-#     CE_ANY_NOT_SUBTITLE_C         <- NOT_SUBTITLE_C        (~0.1% coded 1)
 #
 # Requires: tidyverse (incl. lubridate)
 # =============================================================================
@@ -99,46 +104,65 @@
 # write_panel(). Loads tidyverse.
 source("code/modules/03_panels/rcrainfo/00_panel_functions.R")
 
+# Inputs, output, and the panel year range.
 ce_file  <- "output/modular_master_files/CE_MASTER.csv"
 frs_file <- "data/frs/FRS_PROGRAM_LINKS.csv"
 out_file <- "output/panels/CE_PANEL_2015_2023/EVAL_PANEL_2015_2023.csv"
 years    <- 2015L:2023L
 
+# Evaluation-type codes with their own CE_TOTAL_* column; everything else rolls
+# into CE_TOTAL_OTHER.
 typed <- c("CEI", "NRR", "FCI", "FRR", "FSD")   # own count columns; rest -> OTHER
 
 # -- 1. CE_MASTER -> one row per evaluation, month-assigned --------------------
 evals <- read_csv(ce_file, col_types = cols(.default = "c"), show_col_types = FALSE,
+                  # Pull only the columns needed for the panel; the master file
+                  # is wide, so restricting here saves a lot of memory.
                   col_select = c(HANDLER_ID, EVAL_ACTIVITY_LOCATION, EVAL_IDENTIFIER,
                                  EVAL_START_DATE, EVAL_AGENCY, EVAL_TYPE,
                                  FOUND_VIOLATION, NOC_DATE,
-                                 CITIZEN_COMPLAINT, MULTIMEDIA_INSPECTION, SAMPLING,
-                                 NOT_SUBTITLE_C, EVAL_RESPONSIBLE_PERSON,
-                                 EVAL_SUBORGANIZATION, EVAL_LAST_CHANGE,
+                                 CITIZEN_COMPLAINT, MULTIMEDIA_INSPECTION,
+                                 EVAL_SUBORGANIZATION,
                                  HANDLER_ACTIVITY_LOCATION, STATE, REGION, LAND_TYPE)) |>
+  # Collapse the master's evaluation-x-violation/enforcement fanout down to one
+  # row per evaluation, keyed on the RCRAInfo evaluation key.
   distinct(HANDLER_ID, EVAL_ACTIVITY_LOCATION, EVAL_IDENTIFIER, EVAL_START_DATE,
            EVAL_AGENCY, .keep_all = TRUE) |>
+  # Parse the start date; evaluations without a parseable start date are dropped.
   mutate(start = ymd(EVAL_START_DATE, quiet = TRUE)) |>
   filter(!is.na(start), year(start) %in% years) |>
   # Suborganization carries its own evaluation state as a "STATE-SUBORG" prefix
   # (e.g. IL-CD); blank when the record has no suborganization code.
   mutate(YEAR  = year(start),
          MONTH = month(start),
-         noc   = ymd(NOC_DATE, quiet = TRUE),
-         EVAL_SUBORG = if_else(!is.na(EVAL_SUBORGANIZATION) & EVAL_SUBORGANIZATION != "",
+         # Notice-of-compliance date, the date the evaluation ended. It is
+         # carried as the raw YYYYMMDD stamp rather than a parsed date, so the
+         # panel writes the value RCRAInfo recorded; a blank is normalised to NA
+         # so the count and the join below agree on what counts as an end date.
+         NOC_DATE = na_if(str_squish(NOC_DATE), ""),
+         EVAL_SUBORG =if_else(!is.na(EVAL_SUBORGANIZATION) & EVAL_SUBORGANIZATION != "",
                                paste(EVAL_ACTIVITY_LOCATION, EVAL_SUBORGANIZATION, sep = "-"),
                                NA_character_))
 
 # -- 2. Facility-month aggregates ----------------------------------------------
+# Collapse to one row per (handler, year, month); each field aggregates over
+# every evaluation whose EVAL_START_DATE falls in that month.
 agg <- evals |>
+  # Sort by start date so join_distinct() emits values in chronological order.
   arrange(HANDLER_ID, start) |>
   group_by(HANDLER_ID, YEAR, MONTH) |>
   summarise(
+    # Multi-valued string fields: distinct values in evaluation-start order.
     CE_EVAL_STATE       = join_distinct(EVAL_ACTIVITY_LOCATION),
     CE_EVAL_AGENCY      = join_distinct(EVAL_AGENCY),
-    CE_EVAL_RESP_PERSON = join_distinct(EVAL_RESPONSIBLE_PERSON),
     CE_EVAL_SUBORG      = join_distinct(EVAL_SUBORG),
-    CE_END_YEAR         = paste(year(noc[!is.na(noc)]),  collapse = ";"),
-    CE_END_MONTH        = paste(month(noc[!is.na(noc)]), collapse = ";"),
+    # End dates: how many distinct notice-of-compliance dates the month holds,
+    # and the dates themselves in evaluation start-date order. The count is the
+    # number of entries in CE_EVAL_DATE, so two evaluations that ended on the
+    # same day count once, as they join once.
+    CE_EVAL_DATE_NUM    = n_distinct(NOC_DATE[!is.na(NOC_DATE)]),
+    CE_EVAL_DATE        = join_distinct(NOC_DATE),
+    # Counts: total, per EVAL_TYPE, and OTHER for the codes without their own bucket.
     CE_TOTAL_EVALS      = n(),
     CE_TOTAL_CEI        = sum(EVAL_TYPE == "CEI", na.rm = TRUE),
     CE_TOTAL_NRR        = sum(EVAL_TYPE == "NRR", na.rm = TRUE),
@@ -146,16 +170,17 @@ agg <- evals |>
     CE_TOTAL_FRR        = sum(EVAL_TYPE == "FRR", na.rm = TRUE),
     CE_TOTAL_FSD        = sum(EVAL_TYPE == "FSD", na.rm = TRUE),
     CE_TOTAL_OTHER      = sum(!EVAL_TYPE %in% typed, na.rm = TRUE),
+    # Violations found on the month's evaluations; CE_MASTER codes it 1/0/U so
+    # only the explicit "1" counts.
     CE_EVALS_WITH_VIOL  = sum(FOUND_VIOLATION == "1", na.rm = TRUE),
+    # Attribute indicators: 1 if ANY evaluation in the month carries the flag.
     CE_ANY_CITIZEN_COMPLAINT     = as.integer(any(CITIZEN_COMPLAINT     == "1", na.rm = TRUE)),
     CE_ANY_MULTIMEDIA_INSPECTION = as.integer(any(MULTIMEDIA_INSPECTION == "1", na.rm = TRUE)),
-    CE_ANY_SAMPLING              = as.integer(any(SAMPLING              == "1", na.rm = TRUE)),
-    CE_ANY_NOT_SUBTITLE_C        = as.integer(any(NOT_SUBTITLE_C        == "1", na.rm = TRUE)),
-    CE_EVAL_LAST_CHANGE = {v <- EVAL_LAST_CHANGE[!is.na(EVAL_LAST_CHANGE)]
-                           if (length(v)) max(v) else NA_character_},
     .groups = "drop")
 
 # -- 3. Handler attributes (most recent evaluation's snapshot) ------------------
+# Repeat the same attributes across all 108 months for the handler, using the
+# value on the handler's most recent evaluation record.
 attrs <- evals |>
   arrange(HANDLER_ID, start) |>
   group_by(HANDLER_ID) |>
@@ -174,13 +199,16 @@ frs <- read_frs_links(ids, frs_file)
 # expand_grid() emits rows already sorted HANDLER_ID x YEAR x MONTH and the
 # left joins preserve that order, so no final arrange over 9.5M rows is needed.
 out <- expand_grid(HANDLER_ID = sort(ids), YEAR = years, MONTH = 1:12) |>
+  # Attach the identifier and the constant handler attributes on ID alone.
   left_join(frs,   by = "HANDLER_ID") |>
   left_join(attrs, by = "HANDLER_ID") |>
+  # Attach the per-month aggregates; months with no evaluation get NA columns.
   left_join(agg,   by = c("HANDLER_ID", "YEAR", "MONTH")) |>
-  mutate(across(c(starts_with("CE_TOTAL_"), CE_EVALS_WITH_VIOL,
-                  CE_ANY_CITIZEN_COMPLAINT, CE_ANY_MULTIMEDIA_INSPECTION,
-                  CE_ANY_SAMPLING, CE_ANY_NOT_SUBTITLE_C),
+  # Fill count and indicator columns with 0 on months that had no evaluation.
+  mutate(across(c(starts_with("CE_TOTAL_"), CE_EVALS_WITH_VIOL, CE_EVAL_DATE_NUM,
+                  CE_ANY_CITIZEN_COMPLAINT, CE_ANY_MULTIMEDIA_INSPECTION),
                 \(x) replace_na(x, 0L)),
+         # CE_ANY_* mirror the matching CE_TOTAL_* / CE_EVALS_WITH_VIOL columns.
          CE_ANY_EVAL  = as.integer(CE_TOTAL_EVALS > 0),
          CE_ANY_CEI   = as.integer(CE_TOTAL_CEI   > 0),
          CE_ANY_NRR   = as.integer(CE_TOTAL_NRR   > 0),
@@ -189,10 +217,11 @@ out <- expand_grid(HANDLER_ID = sort(ids), YEAR = years, MONTH = 1:12) |>
          CE_ANY_FSD   = as.integer(CE_TOTAL_FSD   > 0),
          CE_ANY_OTHER = as.integer(CE_TOTAL_OTHER > 0),
          CE_ANY_VIOL  = as.integer(CE_EVALS_WITH_VIOL > 0)) |>
+  # Final panel column order.
   select(HANDLER_ID, FRS_ID, YEAR, MONTH,
          CE_ACTIVITY_STATE, CE_LOCATION_STATE, CE_EPA_REGION, CE_LAND_TYPE,
-         CE_EVAL_STATE, CE_EVAL_AGENCY, CE_EVAL_RESP_PERSON, CE_EVAL_SUBORG,
-         CE_END_YEAR, CE_END_MONTH,
+         CE_EVAL_STATE, CE_EVAL_AGENCY, CE_EVAL_SUBORG,
+         CE_EVAL_DATE_NUM, CE_EVAL_DATE,
          CE_ANY_EVAL,  CE_TOTAL_EVALS,
          CE_ANY_CEI,   CE_TOTAL_CEI,
          CE_ANY_NRR,   CE_TOTAL_NRR,
@@ -201,12 +230,11 @@ out <- expand_grid(HANDLER_ID = sort(ids), YEAR = years, MONTH = 1:12) |>
          CE_ANY_FSD,   CE_TOTAL_FSD,
          CE_ANY_OTHER, CE_TOTAL_OTHER,
          CE_ANY_VIOL,  CE_EVALS_WITH_VIOL,
-         CE_ANY_CITIZEN_COMPLAINT, CE_ANY_MULTIMEDIA_INSPECTION,
-         CE_ANY_SAMPLING, CE_ANY_NOT_SUBTITLE_C,
-         CE_EVAL_LAST_CHANGE)
+         CE_ANY_CITIZEN_COMPLAINT, CE_ANY_MULTIMEDIA_INSPECTION)
 
 # write_panel() writes the CSV plus an .rds twin: plain CSV stores no column
 # types, so read_csv() re-guesses them and mistypes the sparse columns (the
-# mostly-empty CE_END_YEAR reads as all-NA logical, and CE_EPA_REGION "05"
-# loses its leading zero); the .rds copy preserves every column's type exactly.
+# mostly-empty CE_EVAL_DATE reads as a double, which turns every multi-date cell
+# into NA, and CE_EPA_REGION "05" loses its leading zero); the .rds copy
+# preserves every column's type exactly.
 write_panel(out, out_file, rds = TRUE)

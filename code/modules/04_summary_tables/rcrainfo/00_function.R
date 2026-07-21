@@ -40,14 +40,19 @@
 # Sourced by the module scripts; running this file on its own only defines
 # functions. Requires: tidyverse, lubridate, openxlsx2.
 
+# Load tidyverse for the pipeline, lubridate for the date parsing, and
+# openxlsx2 for the workbook writer; suppressMessages hides the attach chatter.
 suppressMessages({
   library(tidyverse); library(lubridate); library(openxlsx2)
 })
 
 # ---- House palette / font ---------------------------------------------------
+# Fill colors for the four cell bands: overview, categorical header, quantitative
+# header, dummy header. Ink is the shared text color; gray is the description ink.
 .col_band   <- "FFB5E6A2"; .col_cathdr <- "FFD2F3C6"
 .col_quant  <- "FFA6C9EC"; .col_dummy  <- "FFFFD966"
 .ink_black  <- "FF000000"; .ink_gray   <- "FF666666"
+# Every worksheet cell uses Calibri 12 so the sheets look identical.
 .FONT <- "Calibri"; .SIZE <- 12
 
 # openxlsx2 stores width as (requested + 0.7109375 padding); subtract to match.
@@ -105,7 +110,9 @@ build_module_summary <- function(data, all_cols, out_file, id_col, temporal_col,
     rcra_start = as.Date("1976-01-01"), today = Sys.Date(), topk = 5L,
     module_desc = NULL, missing_notes = NULL, not_summarized = NULL) {
 
+  # Row count anchors every "% of total" figure below.
   n_total <- nrow(data)
+  # Default the module description to blank so the overview cell is still valid.
   if (is.null(module_desc)) module_desc <- ""
 
   # columns referenced only as a description source ("desc:<COL>") are used
@@ -118,22 +125,30 @@ build_module_summary <- function(data, all_cols, out_file, id_col, temporal_col,
   # resolve any "desc:<COL>" label schemes into named vectors derived from data
   derive_labels <- function(code_col, desc_col) {
     tibble(code = data[[code_col]], d = data[[desc_col]]) |>
+      # Drop rows missing either the code or the description text.
       filter(!is.na(code), code != "", !is.na(d), d != "") |>
+      # Most common description per code wins; ties resolved by first occurrence.
       count(code, d) |> group_by(code) |> slice_max(n, n = 1, with_ties = FALSE) |>
       ungroup() |> transmute(code, lab = prettify(d)) |> deframe()
   }
   cat_spec <- map(cat_spec, function(s) {
+    # Swap "desc:<col>" placeholder for a real named label vector.
     if (is.character(s$labels) && length(s$labels) == 1 && str_starts(s$labels, "desc:"))
       s$labels <- derive_labels(s$col, str_remove(s$labels, "desc:"))
+    # Default active = FALSE (whether the % column shows one-decimal fmt).
     if (is.null(s$active)) s$active <- FALSE
     s
   })
 
   # ---- overview ----
+  # Distinct facilities on the ID column.
   n_handlers <- n_distinct(data[[id_col]])
+  # Parse the temporal column and clip it to the RCRA window (1976-today).
   td  <- ymd(data[[temporal_col]], quiet = TRUE)
   tdp <- td[!is.na(td) & td >= rcra_start & td <= today]
+  # Human-readable range string, e.g. "1980-04-15 to 2026-07-20".
   temporal <- sprintf("%s to %s", format(min(tdp)), format(max(tdp)))
+  # Every column the spec asks for; anything else in all_cols is dropped.
   summarized <- c(map_chr(cat_spec, "col"), quant_dates, names(quant_nums),
                   flag_simple, names(flag_composite))
   # columns present in the source file but not summarized (and not used as a
@@ -154,6 +169,7 @@ build_module_summary <- function(data, all_cols, out_file, id_col, temporal_col,
 
   # ---- categorical blocks ----
   build_cat_block <- function(s) {
+    # Read the column and treat empty strings as missing.
     x <- data[[s$col]]; x[x == ""] <- NA
     n_miss <- sum(is.na(x)); n_cat <- n_distinct(x, na.rm = TRUE)
     # A column that is blank on every row still gets a block, so the reader sees
@@ -163,6 +179,7 @@ build_module_summary <- function(data, all_cols, out_file, id_col, temporal_col,
                   miss = sprintf("100%%\n(%d)", n_miss), ncat = 0L,
                   vals = "(blank on every row)", pct = 0, N = 0L, active = FALSE))
     }
+    # Frequency table sorted by count desc, then take the top-k.
     fr    <- tibble(value = x) |> filter(!is.na(value)) |> count(value, sort = TRUE)
     shown  <- slice_head(fr, n = topk)
     n_rest <- n_cat - nrow(shown)
@@ -174,10 +191,12 @@ build_module_summary <- function(data, all_cols, out_file, id_col, temporal_col,
     # than the tail so that two lists sharing a long prefix stay distinguishable.
     vals  <- apply_labels(str_trunc(shown$value, 60, side = "center"), s$labels)
     Ns    <- shown$n
+    # If categories were rolled up, append the "All Other" tally last.
     if (n_rest > 0) {
       vals <- c(vals, sprintf("All Other (%d)", n_rest))
       Ns   <- c(Ns, sum(fr$n) - sum(shown$n))
     }
+    # One list per categorical variable; the writer expands it into a block.
     list(name = s$name, desc = s$desc,
          miss = sprintf("%s%%\n(%d)", pct1(100 * n_miss / n_total), n_miss),
          ncat = n_cat, vals = vals,
@@ -189,15 +208,19 @@ build_module_summary <- function(data, all_cols, out_file, id_col, temporal_col,
   # A column with no parseable value anywhere has no quantiles to report, so the
   # four statistic cells stay blank and only the N and % missing columns fill in.
   q_date <- function(v) {
+    # Parse the yyyymmdd column; unparseable strings become NA.
     d <- ymd(data[[v]], quiet = TRUE); nm <- sum(is.na(d))
+    # type = 1 keeps the quantile as an actual observation date, not an interpolation.
     q <- if (nm == n_total) rep(NA, 4) else quantile(d, c(0, .05, .95, 1), na.rm = TRUE, type = 1)
     list(name = v, N = n_total - nm, miss = round(100 * nm / n_total, 1), stats = q, date = TRUE)
   }
   q_num <- function(v, dg) {
+    # Cast to numeric; dg is the decimal precision for the output cells.
     x <- suppressWarnings(as.numeric(data[[v]])); nm <- sum(is.na(x))
     q <- if (nm == n_total) rep(NA_real_, 4) else quantile(x, c(0, .05, .95, 1), na.rm = TRUE)
     list(name = v, N = n_total - nm, miss = round(100 * nm / n_total, 1), stats = round(q, dg), date = FALSE)
   }
+  # First the date columns, then the numeric columns (with decimal precision).
   quant_rows <- c(map(quant_dates, q_date), imap(quant_nums, ~ q_num(.y, .x)))
 
   # ---- dummy rows ----
@@ -205,6 +228,7 @@ build_module_summary <- function(data, all_cols, out_file, id_col, temporal_col,
   # (the raw Biennial Report tables). "U" (unknown) gets its own column pair,
   # so an unknown never counts as a No.
   dummy_stat <- function(yes, no, unk, miss_n) {
+    # Aggregate Yes / No / Unknown counts and percentages.
     yn <- sum(yes, na.rm = TRUE); nn <- sum(no, na.rm = TRUE)
     un <- sum(unk, na.rm = TRUE)
     c(miss_n, round(100 * miss_n / n_total, 2),
@@ -212,6 +236,7 @@ build_module_summary <- function(data, all_cols, out_file, id_col, temporal_col,
       un, round(100 * un / n_total, 2))
   }
   dummy_names <- character(); dummy_vals <- list()
+  # Simple flags: any raw column whose codes are Y/N or 1/0 (with optional "U").
   for (v in flag_simple) {
     x <- data[[v]]; x[x == ""] <- NA
     dummy_names <- c(dummy_names, v)
@@ -219,6 +244,7 @@ build_module_summary <- function(data, all_cols, out_file, id_col, temporal_col,
                                                  x %in% c("N", "0"),
                                                  x == "U", sum(is.na(x)))))
   }
+  # Composite flags: 1 if a regex matches the column's value (no "U" pathway).
   for (v in names(flag_composite)) {
     x <- data[[v]]; x[x == ""] <- NA
     act <- str_detect(x, flag_composite[[v]])
@@ -229,7 +255,9 @@ build_module_summary <- function(data, all_cols, out_file, id_col, temporal_col,
   # ===========================================================================
   # WRITE
   # ===========================================================================
+  # Fresh workbook; the three sheets are appended below.
   wb <- wb_workbook()
+  # add_grid draws thin black borders around and inside the given range.
   add_grid <- function(sheet, dims) wb$add_border(sheet, dims = dims,
                                                   left_border = "thin", right_border = "thin", top_border = "thin", bottom_border = "thin",
                                                   inner_hgrid = "thin", inner_vgrid = "thin",
@@ -271,6 +299,7 @@ build_module_summary <- function(data, all_cols, out_file, id_col, temporal_col,
   add_missing_notes <- function(sheet, start_row, end_col, notes)
     add_note_block(sheet, start_row, end_col, "Notes on missing values:", notes)
 
+  # Excel column letters used to address cells in the writer below.
   COLS <- LETTERS[1:9]
 
   # -- Sheet 1: Categorical ---------------------------------------------------
@@ -289,7 +318,10 @@ build_module_summary <- function(data, all_cols, out_file, id_col, temporal_col,
   hdr6 <- c("Variables", "Missing", "# Categories", "Most Frequent Values", "%", "N")
   for (j in seq_along(hdr6)) wb$add_data("Categorical", hdr6[j], dims = paste0(COLS[j], "6"), col_names = FALSE)
 
+  # Writer state: current row, merges to apply after, and any F-column active ranges.
   r <- 7L; cat_merges <- list(); active_F <- character()
+  # Emit each categorical block: variable name + description in col A, missing /
+  # ncat in cols B/C, values / % / N in cols D/E/F.
   for (b in cat_blocks) {
     k <- length(b$vals); r0 <- r; r1 <- r + k - 1L
     wb$add_data("Categorical",
@@ -323,6 +355,7 @@ build_module_summary <- function(data, all_cols, out_file, id_col, temporal_col,
   for (m in c("A1:F1", "A2:F2", "C3:C4", "D3:F4", "B5:F5", unlist(cat_merges)))
     wb$merge_cells("Categorical", dims = m)
 
+  # Missing-value notes come first, then the dropped-columns note block.
   nr <- add_missing_notes("Categorical", last + 2L, "F", get_missing_notes("categorical"))
   dropped_lines <- if (length(dropped)) strsplit(wrap_quoted(dropped), "\n")[[1]] else character()
   add_note_block("Categorical", nr, "F",
@@ -388,8 +421,10 @@ build_module_summary <- function(data, all_cols, out_file, id_col, temporal_col,
     add_missing_notes("Dummy", dlast + 2L, "I", get_missing_notes("dummy"))
   }
 
+  # Ensure the target folder exists, then save the workbook (overwrite existing).
   dir.create(dirname(out_file), recursive = TRUE, showWarnings = FALSE)
   wb_save(wb, out_file, overwrite = TRUE)
+  # Print a one-line confirmation with the row count and distinct-ID count.
   cat(sprintf("Wrote %s  (n_total = %s, distinct %s = %s)\n", out_file,
               format(n_total, big.mark = ","), id_col, format(n_handlers, big.mark = ",")))
   invisible(out_file)

@@ -30,8 +30,13 @@
 # Requires: tidyverse (incl. lubridate)
 # =============================================================================
 
+# Load the shared panel functions (loads tidyverse as a side effect) and every
+# constant table (severity maps, HD attribute map, output column order).
 source("code/modules/03_panels/rcrainfo/00_panel_functions.R")
 
+# Build the unbalanced BR panel end to end. balanced = FALSE keeps every handler
+# recognized in at least one cycle (1 to 5 rows per handler), a strict superset
+# of the balanced panel built by the same rules.
 build_br_panel(
   balanced = FALSE,
   out_file = "output/panels/BR_PANEL_2015_2023_UNBALANCED/BR_PANEL_2015_2023_UNBALANCED.csv")

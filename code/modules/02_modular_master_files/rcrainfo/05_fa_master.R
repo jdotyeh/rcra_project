@@ -36,9 +36,11 @@
 # Loads tidyverse.
 source("code/modules/02_modular_master_files/rcrainfo/00_function.R")
 
+# Raw FA module folder and the master output path.
 fa_dir   <- "data/rcrainfo/fa"
 out_file <- "output/modular_master_files/FA_MASTER.csv"
 
+# Thin wrapper that fixes the FA folder for read_module().
 read_fa <- function(file) read_module(fa_dir, file)
 
 # Cost-estimate identity. FA_COST_ESTIMATE spells the handler key HANDLER_ID;
@@ -49,20 +51,26 @@ cost_keys <- c("COST_ACTIVITY_LOCATION", "COST_FA_TYPE", "COST_AGENCY",
 mech_keys        <- c("MECH_ACTIVITY_LOCATION", "MECH_AGENCY", "MECH_SEQ")
 mech_detail_keys <- c(mech_keys, "MECH_DETAIL_SEQ")
 
+# Cost-estimate rows with the Y/N flag recoded to 1/0.
 cost_estimate  <- read_fa("FA_COST_ESTIMATE.csv") |>
   convert_indicators("CURRENT_COST_ESTIMATE")
+# Cost-estimate -> mechanism-detail link (linkage columns only).
 cost_mechanism <- read_fa("FA_COST_MECHANISM_DETAIL.csv")
+# Mechanism-detail attributes with the Y/N flag recoded.
 mech_detail    <- read_fa("FA_MECHANISM_DETAIL.csv") |>
   convert_indicators("CURRENT_MECHANISM_DETAIL")
+# Mechanism attributes (type, provider info).
 mechanism      <- read_fa("FA_MECHANISM.csv")
 
 master <- cost_estimate |>
   # cost estimate -> the mechanism detail(s) that fund it
   left_join(cost_mechanism, by = c("HANDLER_ID" = "COST_HANDLER_ID", cost_keys),
             relationship = "many-to-many") |>
+  # Attach mechanism-detail attributes to the linkage row.
   left_join(mech_detail,
             by = c("MECH_HANDLER_ID" = "HANDLER_ID", mech_detail_keys),
             relationship = "many-to-many") |>
+  # Attach the mechanism (type + provider) that the detail sits under.
   left_join(mechanism,
             by = c("MECH_HANDLER_ID" = "HANDLER_ID", mech_keys),
             relationship = "many-to-many")
@@ -87,4 +95,5 @@ master <- master |>
     EXPIRATION_DATE, ALTERNATIVE, CURRENT_MECHANISM_DETAIL
   )
 
+# Write the master with empty-string NAs.
 write_csv(master, out_file, na = "")

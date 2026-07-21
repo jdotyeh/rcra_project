@@ -29,15 +29,21 @@
 # Loads tidyverse.
 source("code/modules/02_modular_master_files/rcrainfo/00_function.R")
 
+# Raw CE module folder and the master output path.
 ce_dir  <- "data/rcrainfo/ce"
 out_file <- "output/modular_master_files/CE_MASTER.csv"
 
+# Thin wrapper that fixes the CE folder for read_module().
 read_ce <- function(file) read_module(ce_dir, file)
 
+# CE_REPORTING is the module's central table; convert its Y/N indicators to
+# 1/0 (FOUND_VIOLATION also carries "U" so it stays character).
 reporting <- read_ce("CE_REPORTING.csv") |>
   convert_indicators(c("FOUND_VIOLATION", "CITIZEN_COMPLAINT",
                        "MULTIMEDIA_INSPECTION", "SAMPLING", "NOT_SUBTITLE_C",
                        "CA_COMPONENT", "FA_REQUIREMENT"))
+# Rename VIOL_OWNER so it does not collide with the citation table's own
+# CITATION_OWNER column after the join.
 citation  <- read_ce("CE_CITATION.csv") |>
   rename(VIOL_TYPE_OWNER = VIOL_OWNER)
 
@@ -46,6 +52,8 @@ citation  <- read_ce("CE_CITATION.csv") |>
 viol_keys <- c("HANDLER_ID", "VIOL_ACTIVITY_LOCATION", "VIOL_SEQ",
                "VIOL_DETERMINED_BY_AGENCY", "VIOL_TYPE")
 
+# Left join adds the citation dimension to every violation row, then select()
+# fixes the master's column order.
 master <- reporting |>
   left_join(citation, by = viol_keys, relationship = "many-to-many") |>
   select(
@@ -82,4 +90,5 @@ master <- reporting |>
     SCHEDULED_COMPLETION_DATE, ACTUAL_COMPLETION_DATE, SEP_DEFAULTED_DATE
   )
 
+# Write the master with empty-string NAs.
 write_csv(master, out_file, na = "")

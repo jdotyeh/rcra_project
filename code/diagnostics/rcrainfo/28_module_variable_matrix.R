@@ -1,3 +1,13 @@
+# =============================================================================
+# FILE:     28_module_variable_matrix.R
+# PURPOSE:  Module variable matrix — build a wide table of every RCRAInfo module column (across HD, CE, CA, PM, FA, WT, BR) and which of them appear in the panels.
+# INPUTS:   data/rcrainfo/**/*.csv, output/panels/**/*.csv
+# OUTPUTS:  console prints (and any figure files noted inline below)
+# AUTHOR:   Jason Ye
+# CREATED:  2026-07
+# UPDATED:  2026-07
+# =============================================================================
+
 # Build variable-presence matrices per RCRAInfo module, two orientations.
 #   vertical   = variables as rows, organized into a multi-level conceptual
 #                tree (Excel outline grouping), files as columns.

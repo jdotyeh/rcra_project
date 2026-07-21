@@ -17,4 +17,4 @@ describes the columns, and `PIPELINE_READ_ME.md` is EPA's own note about the
 extract, both written by `02_scrape_data_dictionary.R`.
 
 The program terms behind these tables are covered in the
-[compliance and enforcement brief](../../docs/institutional/03_compliance_and_enforcement.md).
+[compliance and enforcement brief](../../docs/institutional_briefs/03_compliance_and_enforcement.md).

@@ -26,6 +26,7 @@
 # output/summary_tables/Permitting Module Summary Tables.xlsx.
 # Requires: tidyverse, lubridate, openxlsx2. Run from the repo root.
 
+# Load the shared summary-tables engine (loads tidyverse / lubridate / openxlsx2).
 source("code/modules/04_summary_tables/rcrainfo/00_function.R")
 
 pm_file  <- "output/modular_master_files/PM_MASTER.csv"
@@ -127,11 +128,15 @@ quant_nums  <- c(SERIES_SEQ = 0L, EVENT_SEQ = 0L, UNIT_SEQ = 0L, UNIT_DETAIL_SEQ
 flag_simple <- c("STANDARDIZED_PERMIT_IND", "CURRENT_UNIT_DETAIL")
 
 # ---- Load (only the needed columns; the master ships underscore names) -------
+# Derive the column subset actually needed from the spec.
 need <- needed_columns(cat_spec, quant_dates, quant_nums, flag_simple, id_col = id_col)
+# all_cols is the master file full header list, used by the engine to name dropped variables.
 all_cols <- read_csv(pm_file, n_max = 0, show_col_types = FALSE) |> names()
+# Read only the needed columns, as character to preserve zero-padded codes.
 pm <- read_csv(pm_file, col_select = all_of(need),
                col_types = cols(.default = col_character()))
 
+# Run the engine to compute the summaries and write the workbook.
 build_module_summary(
   data = pm, all_cols = all_cols, out_file = out_file, id_col = id_col,
   temporal_col = "BEST_DATE",

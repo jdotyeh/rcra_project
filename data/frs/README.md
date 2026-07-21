@@ -15,4 +15,4 @@ matching the RCRAInfo Handler ID against `PGM_SYS_ID` on the rows where
 `FRS_ID`. The registry identifier is the bridge from the hazardous waste
 records to the other environmental datasets in `data/`, and the reasoning and its
 limits are set out in the
-[facility identifiers brief](../../docs/institutional/09_facility_identifiers.md).
+[facility identifiers brief](../../docs/institutional_briefs/09_facility_identifiers.md).

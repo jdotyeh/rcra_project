@@ -44,9 +44,11 @@
 # Loads tidyverse.
 source("code/modules/02_modular_master_files/rcrainfo/00_function.R")
 
+# Raw CA module folder and the master output path.
 ca_dir   <- "data/rcrainfo/ca"
 out_file <- "output/modular_master_files/CA_MASTER.csv"
 
+# Thin wrapper that fixes the CA folder for read_module().
 read_ca <- function(file) read_module(ca_dir, file)
 
 # Event identity. In CA_EVENT the handler column is HANDLER_ID; the link tables
@@ -57,15 +59,19 @@ event_keys <- c("EVENT_ACTIVITY_LOCATION", "EVENT_SEQ", "EVENT_AGENCY",
 authority_keys <- c("AUTHORITY_ACTIVITY_LOCATION", "AUTHORITY_AGENCY",
                     "AUTHORITY_OWNER", "AUTHORITY_TYPE", "AUTHORITY_EFFECTIVE_DATE")
 
+# Central event table; every other CA table hangs off it.
 event <- read_ca("CA_EVENT.csv")
 
+# Event -> area link, then area attributes with Y/N indicators converted.
 area_event <- read_ca("CA_AREA_EVENT.csv")
 area       <- read_ca("CA_AREA.csv") |>
   convert_indicators(c("ENTIRE_FACILITY_IND", "REGULATED_UNIT_IND",
                        "AIR_RELEASE_IND", "GROUNDWATER_RELEASE_IND",
                        "SOIL_RELEASE_IND", "SURFACE_WATER_RELEASE_IND"))
+# Area -> process-unit linkage (linkage columns only).
 area_unit  <- read_ca("CA_AREA_UNIT.csv")
 
+# Event -> authority link.
 event_authority <- read_ca("CA_EVENT_AUTHORITY.csv")
 
 # Prefix the authority's own attribute columns so they do not clash with the
@@ -79,6 +85,7 @@ authority <- read_ca("CA_AUTHORITY.csv") |>
          AUTHORITY_SUBORGANIZATION_OWNER    = SUBORGANIZATION_OWNER,
          AUTHORITY_SUBORGANIZATION          = SUBORGANIZATION)
 
+# Statutory citation carried by each authority.
 authority_citation <- read_ca("CA_AUTHORITY_CITATION.csv")
 
 master <- event |>
@@ -126,4 +133,5 @@ master <- master |>
     STATUTORY_OWNER, STATUTORY_CITATION
   )
 
+# Write the master with empty-string NAs.
 write_csv(master, out_file, na = "")
