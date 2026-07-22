@@ -4,18 +4,20 @@ Reference material that supports the project. Most of it is not read by the
 pipeline, with the exceptions noted below that the public-site builder and the
 enforcement panel read.
 
-- `CME-Enforcement-Type.md` reproduces the RCRAInfo Nationally-Defined Values
+- `CE-Enforcement-Type.md` reproduces the RCRAInfo Nationally-Defined Values
   page for Enforcement Type, listing the 37 nationally-defined codes with their
   names, full definitions, and the page's own "Formal Action" flag. It is the
   single source of truth for which enforcement type codes count as defined, and
   `code/modules/03_panels/rcrainfo/04_panel_enf_2015_2023.R` reads it through
   `read_enf_type_defined()`.
-- `CME-Enforcement-Type-Crosswalk.md` records how every state-specific
+- `CE-Enforcement-Type-Crosswalk.md` records how every state-specific
   enforcement type code in `CE_MASTER` was matched to a defined code, keyed on
   the code and the description together and using 999 for a pair that no defined
   code covers. Each line also carries a revised reading of the description in
   title case with its abbreviations expanded, and the file's abbreviation table
-  records what each removed abbreviation stood for. It is a decision record as
+  records what each removed abbreviation stood for. A table of its own gathers
+  the 53 pairs that land on 999 while still carrying a description, which is the
+  part of the 999 group that can be read at all. It is a decision record as
   much as a lookup, explaining how each match was reached, and the same panel
   script reads it through
   `read_enf_type_crosswalk()`. Editing this file changes the panel, so the

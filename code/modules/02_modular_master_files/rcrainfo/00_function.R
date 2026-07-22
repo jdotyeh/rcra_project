@@ -5,15 +5,18 @@
 #           defines the functions.
 # INPUTS:   none (sourced by the master scripts 01-07 in this folder)
 # OUTPUTS:  none of its own; defines read_module(), recode_pre_date_unknown(),
-#           recode_pre_cycle_unknown(), convert_indicators(), and
-#           apply_frs_coordinates() with its address and distance helpers
+#           recode_pre_cycle_unknown(), convert_indicators(), read_frs_pairs(),
+#           apply_frs_coordinates() with its address and distance helpers,
+#           apply_manual_coordinates() with the manual_coords table, and
+#           add_coordinate_slots() with coord_slot_cols() and
+#           coordinate_review_list()
 # AUTHOR:   Jason Ye
 # CREATED:  2026-07-17
-# UPDATED:  2026-07-21
+# UPDATED:  2026-07-22
 # =============================================================================
 #
-# Three concerns are shared by every master script and live here, and a fourth
-# section holds the FRS coordinate override that the Handler master alone uses.
+# Three concerns are shared by every master script and live here, and four
+# further sections hold the coordinate work that the Handler master alone uses.
 #
 # 1. Reading. read_module() reads a raw RCRAInfo CSV with every column as
 #    character, so zero-padded identifiers and yyyymmdd date stamps survive
@@ -42,12 +45,30 @@
 #    "U" (unknown, from the recodes above or shipped in the raw data) must
 #    stay character, holding "1"/"0"/"U".
 #
-# 4. FRS coordinates. apply_frs_coordinates() replaces a handler record's
+# 4. FRS pairs. read_frs_pairs() resolves each handler to the one pair the EPA
+#    Facility Registry Service publishes for it, and says why a handler has no
+#    usable pair when it has none. Everything below reads that one table rather
+#    than the FRS files themselves, so the national download is read once.
+#
+# 5. FRS coordinates. apply_frs_coordinates() replaces a handler record's
 #    latitude and longitude with the coordinates the EPA Facility Registry
 #    Service holds for the same facility, but only on the records where the two
 #    sources can be shown to describe the same place. The rules and their
 #    reasoning are documented above the function; 01_hd_master.R is the only
 #    caller.
+#
+# 6. Manual coordinates. apply_manual_coordinates() overwrites the coordinates
+#    of the few handlers that reach neither FRS rule and hold a pair that is
+#    visibly wrong, from the hand-checked manual_coords table above the
+#    function. It runs after the FRS override and 01_hd_master.R is again the
+#    only caller.
+#
+# 7. Coordinate slots. add_coordinate_slots() leaves the three columns above
+#    alone and adds a second, wider account of the same question, which is every
+#    coordinate pair that is available for a record at all, ranked, with the
+#    pair that should be used first. coordinate_review_list() then names the
+#    facilities for which no pair is available from any source, which are the
+#    ones that can only be placed by hand.
 #
 # Requires: tidyverse
 # =============================================================================
@@ -218,35 +239,37 @@ valid_coord <- function(lat, lon) {
     abs(lat) <= 90 & abs(lon) <= 180 & !(lat == 0 & lon == 0)
 }
 
-# Replace LOCATION_LATITUDE and LOCATION_LONGITUDE with the FRS pair on the
-# records the two rules above admit, and record which rule admitted each record
-# in LOCATION_COORD_SOURCE ("HD" for the records that keep what they reported,
-# "FRS_ADDRESS" and "FRS_COORDINATE" for the two rules). The FRS values are
-# carried across as the strings FRS publishes, so no rounding is introduced.
-apply_frs_coordinates <- function(handler,
-                                  facilities_file = "data/frs/FRS_FACILITIES.csv",
-                                  links_file      = "data/frs/FRS_PROGRAM_LINKS.csv",
-                                  max_variants    = 5L,
-                                  max_spread_km   = 1,
-                                  match_digits    = 4L) {
-  # The address columns, named once: they key the normalisation lookup below.
-  addr_cols <- c("LOCATION_STREET_NO", "LOCATION_STREET1", "LOCATION_STREET2",
-                 "LOCATION_CITY", "LOCATION_STATE", "LOCATION_ZIP")
-  ids <- unique(handler$HANDLER_ID)
-
+# The one FRS pair that belongs to each handler, for the handlers given. Returns
+# one row per handler that carries at least one RCRAInfo program link, with the
+# FRS pair as published (both as strings for a write and as numbers for the
+# distance tests), the normalised FRS address the address rule compares against,
+# and FRS_STATUS saying whether the pair is usable and, when it is not, why.
+#
+#   OK                the handler resolves to one registry identifier holding
+#                     exactly one facility row with a usable pair
+#   MULTI_LINK        the handler resolves to more than one registry identifier,
+#                     so it names more than one facility
+#   NO_FRS_ROW        the registry identifier is not in the Facilities file
+#   FRS_PAIR_INVALID  the identifier's rows are all missing or out of range
+#   MULTI_FRS_ROW     the identifier arrives on several rows holding different
+#                     usable pairs, so which one is the facility's is unsettled
+#
+# The pair and address columns are blank on every status other than OK, so a
+# caller cannot use an unsettled pair by forgetting to filter. Handlers with no
+# link at all are absent from the result entirely, which the callers read as the
+# sixth case.
+read_frs_pairs <- function(handler_ids,
+                           facilities_file = "data/frs/FRS_FACILITIES.csv",
+                           links_file      = "data/frs/FRS_PROGRAM_LINKS.csv") {
   # Handler ID to FRS registry ID, read the same way the panel stage reads it:
   # only the RCRAINFO program rows, only the handlers in hand, only three of the
-  # file's columns. A handler that resolves to more than one registry identifier
-  # names more than one facility and has no single pair to import, so it is
-  # dropped rather than guessed at.
+  # file's columns.
   link <- read_csv(links_file, col_types = cols(.default = "c"),
                    show_col_types = FALSE,
                    col_select = c(PGM_SYS_ACRNM, PGM_SYS_ID, REGISTRY_ID)) |>
-    filter(PGM_SYS_ACRNM == "RCRAINFO", PGM_SYS_ID %in% ids) |>
+    filter(PGM_SYS_ACRNM == "RCRAINFO", PGM_SYS_ID %in% handler_ids) |>
     distinct(HANDLER_ID = PGM_SYS_ID, FRS_ID = REGISTRY_ID) |>
-    add_count(HANDLER_ID, name = "n_ids") |>
-    filter(n_ids == 1L) |>
-    select(-n_ids)
+    add_count(HANDLER_ID, name = "n_ids")
 
   # The Facilities file's column names come from the ECHO FRS national download
   # (FRS_FACILITIES.csv), and a rename on EPA's side would otherwise surface as
@@ -261,17 +284,19 @@ apply_frs_coordinates <- function(handler,
     stop("Columns missing from ", facilities_file, ": ",
          paste(missing_cols, collapse = ", "))
 
-  # The FRS facility rows behind those identifiers: the published coordinates,
-  # kept both as strings for the write and as numbers for the distance tests,
-  # and the normalised address the record-level rule compares against. Rows
-  # without a usable pair carry nothing worth importing and drop out here.
-  frs <- read_csv(facilities_file, col_types = cols(.default = "c"),
-                  show_col_types = FALSE,
-                  col_select = c(REGISTRY_ID, FAC_STREET, FAC_CITY,
-                                 FAC_STATE, FAC_ZIP, LATITUDE_MEASURE, LONGITUDE_MEASURE)) |>
+  # The FRS facility rows behind those identifiers, before any test, so that an
+  # identifier the file does not hold can be told apart from one whose rows it
+  # holds but cannot use.
+  raw <- read_csv(facilities_file, col_types = cols(.default = "c"),
+                  show_col_types = FALSE, col_select = all_of(frs_cols)) |>
     filter(REGISTRY_ID %in% link$FRS_ID) |>
     mutate(frs_lat = suppressWarnings(as.numeric(LATITUDE_MEASURE)),
-           frs_lon = suppressWarnings(as.numeric(LONGITUDE_MEASURE))) |>
+           frs_lon = suppressWarnings(as.numeric(LONGITUDE_MEASURE)))
+  n_raw <- count(raw, REGISTRY_ID, name = "n_raw")
+
+  # The rows that survive the validity test, counted per identifier so the two
+  # remaining failures can be named as well.
+  frs <- raw |>
     filter(valid_coord(frs_lat, frs_lon)) |>
     transmute(FRS_ID      = REGISTRY_ID,
               frs_lat, frs_lon,
@@ -281,11 +306,63 @@ apply_frs_coordinates <- function(handler,
               frs_city    = norm_text(FAC_CITY),
               frs_state   = norm_text(FAC_STATE),
               frs_zip     = str_extract(FAC_ZIP, "^[0-9]{5}")) |>
-    # A registry identifier that arrives twice with two different pairs cannot
-    # settle which is the facility's, so it is dropped for the same reason.
-    add_count(FRS_ID, name = "n_rows") |>
-    filter(n_rows == 1L) |>
-    select(-n_rows)
+    add_count(FRS_ID, name = "n_valid")
+  rm(raw); invisible(gc())
+
+  # A handler with one identifier carries the pair behind it whenever that
+  # identifier resolves to exactly one usable facility row.
+  single <- link |>
+    filter(n_ids == 1L) |>
+    select(HANDLER_ID, FRS_ID) |>
+    left_join(n_raw, by = c("FRS_ID" = "REGISTRY_ID")) |>
+    left_join(distinct(frs, FRS_ID, n_valid), by = "FRS_ID") |>
+    mutate(n_raw      = coalesce(n_raw, 0L),
+           n_valid    = coalesce(n_valid, 0L),
+           FRS_STATUS = case_when(n_raw   == 0L ~ "NO_FRS_ROW",
+                                  n_valid == 0L ~ "FRS_PAIR_INVALID",
+                                  n_valid  > 1L ~ "MULTI_FRS_ROW",
+                                  .default      = "OK")) |>
+    select(-n_raw, -n_valid) |>
+    left_join(select(filter(frs, n_valid == 1L), -n_valid), by = "FRS_ID")
+
+  # A handler with several identifiers keeps one row naming the failure, so the
+  # result stays unique on HANDLER_ID and every caller can join on it directly.
+  multi <- link |>
+    filter(n_ids > 1L) |>
+    distinct(HANDLER_ID) |>
+    mutate(FRS_STATUS = "MULTI_LINK")
+
+  out <- bind_rows(single, multi)
+
+  message("FRS pairs: ", sum(out$FRS_STATUS == "OK"), " of ",
+          length(handler_ids), " handlers resolve to a usable FRS pair (",
+          nrow(out) - sum(out$FRS_STATUS == "OK"), " linked but unusable, ",
+          length(handler_ids) - nrow(out), " with no RCRAInfo link)")
+  out
+}
+
+# Replace LOCATION_LATITUDE and LOCATION_LONGITUDE with the FRS pair on the
+# records the two rules above admit, and record which rule admitted each record
+# in LOCATION_COORD_SOURCE ("HD" for the records that keep what they reported,
+# "FRS_ADDRESS" and "FRS_COORDINATE" for the two rules). The FRS values are
+# carried across as the strings FRS publishes, so no rounding is introduced.
+apply_frs_coordinates <- function(handler,
+                                  frs_pairs     = read_frs_pairs(unique(handler$HANDLER_ID)),
+                                  max_variants  = 5L,
+                                  max_spread_km = 1,
+                                  match_digits  = 4L) {
+  # The address columns, named once: they key the normalisation lookup below.
+  addr_cols <- c("LOCATION_STREET_NO", "LOCATION_STREET1", "LOCATION_STREET2",
+                 "LOCATION_CITY", "LOCATION_STATE", "LOCATION_ZIP")
+  ids <- unique(handler$HANDLER_ID)
+
+  # Only the handlers that resolve to one facility with one usable pair have
+  # anything to import; read_frs_pairs() has already set the rest aside, and
+  # this table is unique on HANDLER_ID, so the join below adds no rows.
+  frs <- frs_pairs |>
+    filter(FRS_STATUS == "OK") |>
+    select(HANDLER_ID, frs_lat, frs_lon, frs_lat_chr, frs_lon_chr,
+           frs_street, frs_city, frs_state, frs_zip)
 
   # Normalise the addresses on the distinct address tuples rather than on every
   # record; the handler table runs to millions of rows and repeats the same few
@@ -305,8 +382,7 @@ apply_frs_coordinates <- function(handler,
   rows <- handler |>
     select(HANDLER_ID, all_of(addr_cols), LOCATION_LATITUDE, LOCATION_LONGITUDE) |>
     left_join(addr, by = addr_cols) |>
-    left_join(link, by = "HANDLER_ID") |>
-    left_join(frs,  by = "FRS_ID") |>
+    left_join(frs,  by = "HANDLER_ID") |>
     mutate(lat_raw = suppressWarnings(as.numeric(LOCATION_LATITUDE)),
            lon_raw = suppressWarnings(as.numeric(LOCATION_LONGITUDE)),
            # An unusable reported pair is treated as absent, so it neither
@@ -369,4 +445,314 @@ apply_frs_coordinates <- function(handler,
   # returning so the master build does not carry two of them.
   rm(rows); invisible(gc())
   out
+}
+
+# ---- Manual coordinate override (used by the Handler master) ----------------
+#
+# A handful of handlers reach neither FRS rule and are left holding a reported
+# pair that is visibly wrong. Where the facility can be identified from its
+# address and placed by hand, its coordinates are recorded here rather than left
+# to a rule, because no rule reads a value the file never contained. Every entry
+# names the source it was read from and the reason the two FRS rules did not
+# reach it, so a later reader can retire the entry when the underlying cause is
+# fixed. The table is deliberately small and every addition is a documented
+# decision; it is not a place to bulk-load geocoding results.
+manual_coords <- tribble(
+  ~HANDLER_ID,    ~LATITUDE,  ~LONGITUDE,   ~SOURCE,       ~REASON,
+  # Baldwin County Electric Membership Cooperative, 41360 County Road 57, Bay
+  # Minette, Alabama 36507. Its two coordinate-bearing records report 3050 and
+  # -8742, which are degrees and minutes written without a decimal point and so
+  # fail the range test, leaving the handler with no usable pair to anchor the
+  # coordinate rule. The address rule does not reach it either, because the
+  # handler writes a second street line, PINE GROVE ROAD EXTENSION, that FRS
+  # does not carry, so the concatenated street never equals the FRS street.
+  "ALR000020404", "30.82745", "-87.75000", "Apple Maps", "out-of-range reported pair; second street line blocks the address match")
+
+# Overwrite the coordinates of every record of a handler listed in
+# manual_coords, and stamp LOCATION_COORD_SOURCE with "MANUAL". This runs after
+# apply_frs_coordinates(), so a manual entry wins over both FRS rules; that is
+# intended, since an entry is only made where the rules were checked and found
+# not to reach the handler.
+apply_manual_coordinates <- function(handler, manual = manual_coords) {
+  # A handler named here but absent from the file is a stale entry rather than a
+  # harmless no-op, so say so instead of passing over it.
+  missing_ids <- setdiff(manual$HANDLER_ID, handler$HANDLER_ID)
+  if (length(missing_ids))
+    warning("manual_coords names handler(s) absent from the file: ",
+            paste(missing_ids, collapse = ", "), call. = FALSE)
+
+  hit <- match(handler$HANDLER_ID, manual$HANDLER_ID)
+
+  message("Manual coordinate override: ", sum(!is.na(hit)), " of ", nrow(handler),
+          " handler records across ", n_distinct(manual$HANDLER_ID), " handler(s)")
+
+  handler |>
+    mutate(LOCATION_LATITUDE     = if_else(is.na(hit), LOCATION_LATITUDE,
+                                           manual$LATITUDE[hit]),
+           LOCATION_LONGITUDE    = if_else(is.na(hit), LOCATION_LONGITUDE,
+                                           manual$LONGITUDE[hit]),
+           LOCATION_COORD_SOURCE = if_else(is.na(hit), LOCATION_COORD_SOURCE,
+                                           "MANUAL"))
+}
+
+# ---- Coordinate slots (used by the Handler master) --------------------------
+#
+# The three columns the two overrides above write answer one question, which is
+# what the record's own coordinates should be once the evidence that the FRS
+# pair belongs to that record has been weighed. The slots answer a different
+# one, which is every pair that is available for the record at all, ranked, so
+# that a reader who wants the best pair takes the first slot and a reader who
+# wants to see what else the file knows reads on. Nothing here overwrites
+# LOCATION_LATITUDE, LOCATION_LONGITUDE, or LOCATION_COORD_SOURCE.
+#
+# The ranking is a preference order over sources rather than a set of admission
+# rules, because a slot claims only that a pair exists and says where it came
+# from, not that it has been shown to be the record's own.
+#
+#   1. MANUAL    the hand-checked manual_coords table. It is placed above FRS
+#                because every entry was made by locating the facility's own
+#                address, which is stronger evidence than a registry link, and
+#                because the same precedence already holds between the two
+#                overrides above.
+#   2. FRS       the pair read from the Facility Registry Service for the
+#                handler, whenever read_frs_pairs() settles on one. This is the
+#                preferred pair on nearly every record that has one, and it is
+#                taken without the address and cluster tests that govern the
+#                override, since a slot does not claim the record's address.
+#   3. HD        the pair the record itself reports, when it passes the same
+#                validity test the FRS pair passes, which is that both halves
+#                parse, sit inside their real ranges, and are not the (0, 0)
+#                placeholder.
+#   4. HD_OTHER  a pair another record of the same handler reports, most
+#                frequently reported first and the most recently filed of two
+#                equally frequent pairs ahead of the other. These are the
+#                alternates that make a facility with a disputed location
+#                visible rather than silently resolved.
+#
+# A pair that repeats a pair already ranked above it does not take a second
+# slot, so a handler whose reported pair agrees with FRS carries one slot rather
+# than two, and agreement is read off the slot count. Pairs are compared at
+# match_digits decimal places, four by default, which is roughly eleven metres
+# and the precision at which two pairs are the same point. The values written
+# are the strings each source publishes, so no rounding is introduced.
+#
+# The first slot is named PREFERRED_LATITUDE, PREFERRED_LONGITUDE, and
+# PREFERRED_COORD_SOURCE, and the rest are numbered from two. The block is a
+# fixed max_slots wide whether or not the data fills it, so the master's columns
+# do not move when the input changes; the run message reports the deepest slot
+# actually reached, which is what the parameter should be set from.
+
+# The slot column block, in order, for a given number of slots. The master's
+# select() names the block through this helper so the two cannot drift apart.
+coord_slot_cols <- function(max_slots = 5L) {
+  rest <- seq_len(max_slots)[-1]
+  c("PREFERRED_LATITUDE", "PREFERRED_LONGITUDE", "PREFERRED_COORD_SOURCE",
+    as.vector(rbind(paste0("LATITUDE_",     rest),
+                    paste0("LONGITUDE_",    rest),
+                    paste0("COORD_SOURCE_", rest))))
+}
+
+# Add the slot block to the handler table. Call this before
+# apply_frs_coordinates(), while LOCATION_LATITUDE and LOCATION_LONGITUDE still
+# hold what the facility reported, so that the HD slot is the reported pair
+# rather than one an override has already replaced.
+add_coordinate_slots <- function(handler,
+                                 frs_pairs    = read_frs_pairs(unique(handler$HANDLER_ID)),
+                                 manual       = manual_coords,
+                                 max_slots    = 5L,
+                                 match_digits = 4L) {
+  # The pair each record reports, parsed once, with the rounded form the
+  # duplicate test compares on. An unusable pair is treated as absent.
+  rec <- handler |>
+    select(HANDLER_ID, RECEIVE_DATE, LOCATION_LATITUDE, LOCATION_LONGITUDE) |>
+    mutate(rd    = suppressWarnings(as.integer(RECEIVE_DATE)),
+           lat   = suppressWarnings(as.numeric(LOCATION_LATITUDE)),
+           lon   = suppressWarnings(as.numeric(LOCATION_LONGITUDE)),
+           ok    = valid_coord(lat, lon),
+           lat_r = if_else(ok, round(lat, match_digits), NA_real_),
+           lon_r = if_else(ok, round(lon, match_digits), NA_real_))
+
+  # Every distinct pair a handler reports anywhere in the file, with the number
+  # of records behind it and the most recently filed spelling of it, which is
+  # the spelling the alternate slots carry.
+  hd_pairs <- rec |>
+    filter(ok) |>
+    group_by(HANDLER_ID, lat_r, lon_r) |>
+    summarise(n_records = n(),
+              last_rd   = max(coalesce(rd, 0L)),
+              i         = which.max(coalesce(rd, 0L)),
+              lat_chr   = LOCATION_LATITUDE[i],
+              lon_chr   = LOCATION_LONGITUDE[i],
+              .groups   = "drop")
+
+  # The alternates a handler offers, in the order they take their slots. The cap
+  # is applied here as well as at the end, so a handler that reports hundreds of
+  # pairs does not carry hundreds of candidate rows through the join below.
+  hd_alt <- hd_pairs |>
+    arrange(HANDLER_ID, desc(n_records), desc(last_rd), lat_r, lon_r) |>
+    group_by(HANDLER_ID) |>
+    mutate(ord = row_number()) |>
+    ungroup() |>
+    filter(ord <= max_slots) |>
+    select(HANDLER_ID, ord,
+           cand_lat_r = lat_r, cand_lon_r = lon_r,
+           cand_lat_chr = lat_chr, cand_lon_chr = lon_chr)
+
+  # A record's slots depend on its handler and on its own spelling of its pair
+  # and on nothing else it carries, so the block is built on the distinct
+  # combinations of the two and joined back to the records afterwards. The
+  # handler table runs to millions of rows and repeats far fewer pairs.
+  key <- distinct(rec, HANDLER_ID, LOCATION_LATITUDE, LOCATION_LONGITUDE,
+                  lat_r, lon_r)
+
+  # The hand-placed pair and the FRS pair, each already one per handler.
+  manual_c <- manual |>
+    transmute(HANDLER_ID,
+              cand_lat_chr = LATITUDE, cand_lon_chr = LONGITUDE,
+              cand_lat_r   = round(suppressWarnings(as.numeric(LATITUDE)),
+                                   match_digits),
+              cand_lon_r   = round(suppressWarnings(as.numeric(LONGITUDE)),
+                                   match_digits),
+              COORD_SOURCE = "MANUAL", rank = 1L, ord = 0L)
+
+  frs_c <- frs_pairs |>
+    filter(FRS_STATUS == "OK") |>
+    transmute(HANDLER_ID,
+              cand_lat_chr = frs_lat_chr, cand_lon_chr = frs_lon_chr,
+              cand_lat_r   = round(frs_lat, match_digits),
+              cand_lon_r   = round(frs_lon, match_digits),
+              COORD_SOURCE = "FRS", rank = 2L, ord = 0L)
+
+  # One row per candidate pair per distinct combination, the four sources
+  # stacked in their ranked order.
+  cand <- bind_rows(
+    inner_join(key, manual_c, by = "HANDLER_ID"),
+    inner_join(key, frs_c,    by = "HANDLER_ID"),
+    key |>
+      filter(!is.na(lat_r)) |>
+      mutate(cand_lat_chr = LOCATION_LATITUDE, cand_lon_chr = LOCATION_LONGITUDE,
+             cand_lat_r   = lat_r,             cand_lon_r   = lon_r,
+             COORD_SOURCE = "HD", rank = 3L, ord = 0L),
+    inner_join(key, hd_alt, by = "HANDLER_ID", relationship = "many-to-many") |>
+      mutate(COORD_SOURCE = "HD_OTHER", rank = 4L))
+
+  # Rank order first, then drop a pair that repeats one already taken, which
+  # distinct() does by keeping the first row of each rounded pair in the order
+  # just set. What survives is numbered, and the numbering is the slot.
+  slots <- cand |>
+    arrange(HANDLER_ID, LOCATION_LATITUDE, LOCATION_LONGITUDE, rank, ord) |>
+    distinct(HANDLER_ID, LOCATION_LATITUDE, LOCATION_LONGITUDE,
+             cand_lat_r, cand_lon_r, .keep_all = TRUE) |>
+    group_by(HANDLER_ID, LOCATION_LATITUDE, LOCATION_LONGITUDE) |>
+    mutate(slot = row_number()) |>
+    ungroup()
+
+  # How deep the data actually goes, read before the cap is applied, so the
+  # message can say what max_slots is cutting off.
+  deepest <- max(slots$slot)
+
+  wide <- slots |>
+    filter(slot <= max_slots) |>
+    select(HANDLER_ID, LOCATION_LATITUDE, LOCATION_LONGITUDE, slot,
+           LATITUDE = cand_lat_chr, LONGITUDE = cand_lon_chr, COORD_SOURCE) |>
+    pivot_wider(id_cols     = c(HANDLER_ID, LOCATION_LATITUDE, LOCATION_LONGITUDE),
+                names_from  = slot,
+                values_from = c(LATITUDE, LONGITUDE, COORD_SOURCE),
+                names_glue  = "{.value}_{slot}") |>
+    rename(PREFERRED_LATITUDE     = LATITUDE_1,
+           PREFERRED_LONGITUDE    = LONGITUDE_1,
+           PREFERRED_COORD_SOURCE = COORD_SOURCE_1)
+
+  # Give the block its full width even where the data does not reach it, so the
+  # master's columns are the same on every run.
+  want    <- coord_slot_cols(max_slots)
+  unfilled <- setdiff(want, names(wide))
+  if (length(unfilled)) wide[unfilled] <- NA_character_
+  wide <- select(wide, HANDLER_ID, LOCATION_LATITUDE, LOCATION_LONGITUDE,
+                 all_of(want))
+
+  # Every right-hand row is one combination of the three join columns and the
+  # records repeat those combinations, so the join adds columns without adding
+  # rows, which the relationship argument holds the join to. Missing coordinates
+  # match missing coordinates, which is dplyr's default and is what puts the FRS
+  # pair on a record that reported nothing.
+  out <- left_join(handler, wide,
+                   by = c("HANDLER_ID", "LOCATION_LATITUDE", "LOCATION_LONGITUDE"),
+                   relationship = "many-to-one")
+
+  filled <- !is.na(out$PREFERRED_COORD_SOURCE)
+  message("Coordinate slots: ", sum(filled), " of ", nrow(out),
+          " handler records carry a preferred pair (",
+          paste(names(table(out$PREFERRED_COORD_SOURCE)),
+                table(out$PREFERRED_COORD_SOURCE), collapse = ", "),
+          "); ", n_distinct(out$HANDLER_ID[!filled]),
+          " handlers have no pair from any source; deepest slot reached is ",
+          deepest, " against a max_slots of ", max_slots)
+
+  # The candidate tables are built on the distinct combinations rather than on
+  # the records, but the joined copy is as long as the handler table itself;
+  # release everything before returning.
+  rm(rec, hd_pairs, hd_alt, key, cand, slots, wide); invisible(gc())
+  out
+}
+
+# The facilities that no source can place, which are the ones a person has to
+# find by hand. A handler qualifies when none of its records carries a preferred
+# pair, so it has no manual entry, no usable FRS pair, and no usable reported
+# pair on any of its records. Call this after add_coordinate_slots() and before
+# the dimension joins, while the table is still one row per source record.
+#
+# Each row carries the handler's latest name and address, which is what a person
+# would search on, together with why the two automatic sources failed:
+# FRS_STATUS is the code read_frs_pairs() assigned, "NO_LINK" where the handler
+# has no RCRAInfo program link at all, and HD_COORD_STATUS separates a handler
+# that reported no coordinates from one whose reported coordinates failed the
+# validity test, which is the case worth reading, since a pair that fails the
+# test is often a real location written in the wrong units.
+#
+# ids restricts the list to a set of handlers, which is how a caller asks only
+# about the facilities a panel actually uses rather than the whole file.
+coordinate_review_list <- function(handler, frs_pairs, ids = NULL) {
+  need <- handler |>
+    group_by(HANDLER_ID) |>
+    summarise(has_pref = any(!is.na(PREFERRED_COORD_SOURCE)), .groups = "drop") |>
+    filter(!has_pref) |>
+    pull(HANDLER_ID)
+  if (!is.null(ids)) need <- intersect(need, ids)
+
+  handler |>
+    filter(HANDLER_ID %in% need) |>
+    mutate(rd       = suppressWarnings(as.integer(RECEIVE_DATE)),
+           reported = !is.na(LOCATION_LATITUDE) | !is.na(LOCATION_LONGITUDE)) |>
+    group_by(HANDLER_ID) |>
+    # The latest record is the one to search on, and the latest record that
+    # reported anything is the one whose failed pair is worth showing; where
+    # nothing was ever reported the second index lands on a row holding
+    # nothing, which is the right answer.
+    summarise(i = which.max(coalesce(rd, 0L)),
+              j = which.max(coalesce(rd, 0L) * reported),
+              HD_NAME    = HANDLER_NAME[i],
+              HD_STREET  = str_squish(paste(coalesce(LOCATION_STREET_NO[i], ""),
+                                            coalesce(LOCATION_STREET1[i], ""),
+                                            coalesce(LOCATION_STREET2[i], ""))),
+              HD_CITY    = LOCATION_CITY[i],
+              HD_STATE   = LOCATION_STATE[i],
+              HD_ZIP     = LOCATION_ZIP[i],
+              HD_COUNTY_CODE      = COUNTY_CODE[i],
+              HD_RECORDS          = n(),
+              LATEST_RECEIVE_DATE = RECEIVE_DATE[i],
+              RECORDS_WITH_REPORTED_PAIR = sum(reported),
+              REPORTED_LATITUDE   = LOCATION_LATITUDE[j],
+              REPORTED_LONGITUDE  = LOCATION_LONGITUDE[j],
+              .groups = "drop") |>
+    select(-i, -j) |>
+    left_join(select(frs_pairs, HANDLER_ID, FRS_STATUS), by = "HANDLER_ID") |>
+    mutate(FRS_STATUS      = coalesce(FRS_STATUS, "NO_LINK"),
+           HD_COORD_STATUS = if_else(RECORDS_WITH_REPORTED_PAIR == 0L,
+                                     "NONE_REPORTED", "REPORTED_INVALID")) |>
+    select(HANDLER_ID, HD_NAME, HD_STREET, HD_CITY, HD_STATE, HD_ZIP,
+           HD_COUNTY_CODE, HD_RECORDS, LATEST_RECEIVE_DATE,
+           FRS_STATUS, HD_COORD_STATUS, RECORDS_WITH_REPORTED_PAIR,
+           REPORTED_LATITUDE, REPORTED_LONGITUDE) |>
+    arrange(HD_STATE, HANDLER_ID)
 }

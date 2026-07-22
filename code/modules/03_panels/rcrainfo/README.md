@@ -68,12 +68,22 @@ exists.
 
 The panels read the Biennial Report tables under `data/rcrainfo/br/`, the Handler
 and Compliance master files under `output/modular_master_files/`, and
-`data/frs/FRS_PROGRAM_LINKS.csv`. The enforcement panel also reads
-`resources/CME-Enforcement-Type.md` and
-`resources/CME-Enforcement-Type-Crosswalk.md`. Each panel is written under `output/panels/` in
-its own subfolder, and every panel subfolder carries a README that documents the
-panel column by column. The panels are small enough to be committed with the
-repository.
+`data/frs/FRS_PROGRAM_LINKS.csv`. The two Biennial Report panels take their
+facility attributes from the Handler master, while the three compliance
+monitoring and enforcement panels read it for one thing only, which is the
+coordinate slot block that all five panels carry under the same names. That
+block is facility-level rather than facility-year or facility-month, so it is
+attached on the identifier alone in the same way `FRS_ID` is, and it is taken
+from the facility's most recent handler record. What the block holds and how its
+slots are ranked is documented in the
+[02_modular_master_files README](../../02_modular_master_files/rcrainfo/README.md#coordinate-slots). The enforcement panel also reads
+`resources/CE-Enforcement-Type.md` and
+`resources/CE-Enforcement-Type-Crosswalk.md`. Each panel is written under `output/panels/` in
+a subfolder, and every panel carries its own decision record beside it
+documenting that panel column by column. The three compliance monitoring and
+enforcement panels share one subfolder and so have three records in it. The
+Biennial Report panels are small enough to be committed with the repository,
+while the compliance monitoring and enforcement panels are rebuilt by the code.
 
 ## Institutional context
 

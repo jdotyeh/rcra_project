@@ -86,6 +86,72 @@ These categories sit alongside the defined-code mapping rather than replacing it
 | 911 | Stipulated Penalty Demand | A demand for penalties already stipulated in an existing order, which enforces a prior action rather than initiating a new one. |  4 |     84 |
 | 912 | Notice of Deficiency | A written informal notice that a submission or a condition is deficient, distinct from a notice naming a regulatory violation. |  3 |     61 |
 
+## Described pairs matched to 999
+
+Most pairs that land on 999 do so because they have no description, and nothing about them can be read beyond the code number. The pairs below are the exception, because each one carries a description that says what the action was even though no defined code covers it. There are 53 such pairs spread over 33 undefined codes and accounting for 7,356 of the 31,669 actions on 999, which leaves 24,313 actions on 999 with no description at all.
+
+Forty of the 53 pairs take one of the proposed 900-block categories, and that is where most of the value in this list sits, because it means the action stays recoverable as a category even though the national scheme has no code for it. The two largest are `DOCUMENT RECEIVED` under 132 at 1,214 actions and `REFERRAL TO ESC ENFORCEMENT SCREEN COMM.` under 141 at 933 actions, and both are workflow events rather than instruments served on a site, which is why neither has a national analogue. The remaining 13 pairs take no category either, because each describes something no proposed category covers, such as the memorandum of understanding under 125 at 1 action, the voluntary cleanup under 116 at 1 action, and the penalty negotiation letter under 201 at 72 actions.
+
+The `Class` column repeats the nine formal and informal flags set out above, and it is blank on the other 44 lines because the record does not establish the class. Eight of the nine flagged lines carry no proposed category, since a state level administrative order or a petition for contempt is a real instrument the description places on one side of the formal line without matching any of the 900-block groupings. The exception is the revocation order under 211, which is both formal and a closeout, so it carries the flag and the category 908 together.
+
+| Code | Description                                                             | Revised                                                                           | New code | Class    | Actions |
+| ---- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------- | -------- | -------- | ------- |
+| 132  | DOCUMENT RECEIVED                                                       | Document Received                                                                 | 909      |          |   1,214 |
+| 141  | REFERRAL TO ESC ENFORCEMENT SCREEN COMM.                                | Referral to Enforcement Screening Committee                                       | 906      |          |     933 |
+| 151  | REFERRAL TO ENFORCEMENT                                                 | Referral to Enforcement                                                           | 906      |          |     876 |
+| 125  | ENF. ACTION REQUEST                                                     | Enforcement Action Request                                                        | 906      |          |     821 |
+| 127  | V3 Conversion Compliance Advisory                                       | Version 3 Conversion Compliance Advisory                                          | 904      |          |     685 |
+| 131  | BACK IN COMPLIANCE LTR                                                  | Back in Compliance Letter                                                         | 908      |          |     468 |
+| 122  | Referral to Enforcement                                                 | Referral to Enforcement                                                           | 906      |          |     466 |
+| 127  | FACILITY APPEALED                                                       | Facility Appealed                                                                 | 910      |          |     300 |
+| 101  | Assigned to Enforcement                                                 | Assigned to Enforcement                                                           | 909      |          |     290 |
+| 101  | INFORMAL ACTIONS                                                        | Informal Actions                                                                  |          | informal |     283 |
+| 135  | No Further Action                                                       | No Further Action                                                                 | 908      |          |     166 |
+| 123  | Termination of Enforcement Order                                        | Termination of Enforcement Order                                                  | 908      |          |     126 |
+| 146  | REMANDED FOR HEARING                                                    | Remanded for Hearing                                                              | 910      |          |      94 |
+| 201  | Penalty negotiation letter                                              | Penalty Negotiation Letter                                                        |          |          |      72 |
+| 212  | Revision of Enforcement Order                                           | Revision of Enforcement Order                                                     | 909      |          |      72 |
+| 112  | Bureau Director Decision Date                                           | Bureau Director Decision Date                                                     | 909      |          |      57 |
+| 315  | STIPULATED PENALTY CALL-IN                                              | Stipulated Penalty Call-In                                                        | 911      |          |      45 |
+| 145  | DETERMINED NOT TO BE A VIOLATION                                        | Determined Not to Be a Violation                                                  | 908      |          |      30 |
+| 263  | INJUNCTIVE RELIEF                                                       | Injunctive Relief                                                                 |          | formal   |      29 |
+| 115  | INFORMAL ENFORCEMENT - OTHER                                            | Informal Enforcement - Other                                                      |          | informal |      28 |
+| 211  | REVOKED OR DISMISSED INITIAL FORMAL 210 COMPLIANCE ORDER                | Revoked or Dismissed Initial Formal 210 Compliance Order                          | 908      |          |      28 |
+| 387  | Satisfaction Letter                                                     | Satisfaction Letter                                                               | 908      |          |      28 |
+| 124  | CASE CLOSED- INFORMAL RTC, DEREFERRAL OR OTHER                          | Case Closed - Informal Return to Compliance - Dereferral or Other                 | 908      |          |      25 |
+| 301  | RELEASE OF VIOLATION                                                    | Release of Violation                                                              | 908      |          |      24 |
+| 251  | DEMAND FOR STIPULATED PENALTIES                                         | Demand for Stipulated Penalties                                                   | 911      |          |      23 |
+| 301  | RELEASE OF NOTICE OF VIOLATION                                          | Release of Notice of Violation                                                    | 908      |          |      23 |
+| 128  | SHOW CAUSE MEETING - DECLINED                                           | Show Cause Meeting - Declined                                                     | 905      |          |      18 |
+| 122  | APPEAL                                                                  | Appeal                                                                            | 910      |          |      17 |
+| 124  | DROP ENFORCEMENT ACTION                                                 | Drop Enforcement Action                                                           | 908      |          |      14 |
+| 513  | APPEAL TO EQB                                                           | Appeal to Environmental Quality Board                                             | 910      |          |      11 |
+| 122  | Demand Notice                                                           | Demand Notice                                                                     | 911      |          |      10 |
+| 112  | Release of Notice of Violation                                          | Release of Notice of Violation                                                    | 908      |          |       9 |
+| 123  | STATE LEVEL ADMINISTRATIVE ORDER                                        | State Level Administrative Order                                                  |          | formal   |       8 |
+| 211  | Administrative Order Appeals Process                                    | Administrative Order Appeals Process                                              | 910      |          |       8 |
+| 115  | INFORMATION REQUEST LETTER(3007)                                        | 3007 Information Request Letter                                                   |          | informal |       7 |
+| 212  | NO DESCRIPTION AVAILABLE                                                | No Description Available                                                          |          |          |       7 |
+| 123  | DROP ACTION                                                             | Drop Action                                                                       | 908      |          |       6 |
+| 313  | Demand for Stipulated Penalty                                           | Demand for Stipulated Penalty                                                     | 911      |          |       6 |
+| 123  | District Referral to Enforcement                                        | District Referral to Enforcement                                                  | 906      |          |       5 |
+| 311  | REVOKED OR DISMISSED INITIAL FORMAL 310 CONSECT ORDER                   | Revoked or Dismissed Initial Formal 310 Consent Order                             | 908      |          |       4 |
+| 095  | DECISION TO END CASE-NO FURTHER ACTION                                  | Decision to End Case - No Further Action                                          | 908      |          |       3 |
+| 127  | Final Penalty Letter                                                    | Final Penalty Letter                                                              |          |          |       3 |
+| 512  | PETITION FOR CONTEMPT                                                   | Petition for Contempt                                                             |          | formal   |       3 |
+| 205  | ADMINISTRATIVE ORDER                                                    | Administrative Order                                                              |          | formal   |       2 |
+| 116  | VOLUNTARY CLEAN-UP                                                      | Voluntary Cleanup                                                                 |          |          |       1 |
+| 124  | ADMIN. REVIEW                                                           | Administrative Review                                                             | 909      |          |       1 |
+| 124  | RCRA ACTION DROPPED- NO VIOLATION                                       | RCRA Action Dropped - No Violation                                                | 908      |          |       1 |
+| 124  | STATE LEVEL ADMINISTRATIVE ORDER                                        | State Level Administrative Order                                                  |          | formal   |       1 |
+| 125  | Memorandum of Understanding                                             | Memorandum of Understanding                                                       |          |          |       1 |
+| 131  | CASE IN PROGRESS                                                        | Case in Progress                                                                  | 909      |          |       1 |
+| 211  | REVOCATION ORDER-REVOKE OR DISMISS INITIAL/UNILATERAL ORDERS (CODE 210) | Revocation Order to Revoke or Dismiss Initial or Unilateral Orders Under Code 210 | 908      | formal   |       1 |
+| 388  | Notice of Significant Non-Compliance (for CAO with DCC)                 | Notice of Significant Noncompliance for Corrective Action Order With DCC          | 903      |          |       1 |
+| 870  | RCRA ACTION DROPPED-NO VIOLATION                                        | RCRA Action Dropped - No Violation                                                | 908      |          |       1 |
+
+The `Mapping` section below is the authoritative form of every line here, and this table repeats those lines rather than adding to them. Nothing in it is read by the panel, which parses the `Mapping` bullets alone.
+
 ## Mapping
 
 * 085
@@ -512,4 +578,4 @@ These categories sit alongside the defined-code mapping rather than replacing it
 | 220 |      1 |
 | 860 |      1 |
 
-The 999 total of 31,669 actions is dominated by pairs with no description at all.
+The 999 total of 31,669 actions is dominated by pairs with no description at all, since only 7,356 of those actions come from the 53 described pairs listed above.

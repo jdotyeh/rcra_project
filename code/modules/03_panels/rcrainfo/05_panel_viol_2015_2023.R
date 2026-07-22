@@ -3,6 +3,7 @@
 # PURPOSE:  Build the balanced facility-month panel of RCRA violations from
 #           CE_MASTER, months 2015-01 through 2023-12, with the FRS link.
 # INPUTS:   output/modular_master_files/CE_MASTER.csv,
+#           output/modular_master_files/HD_MASTER.csv (coordinate slots only),
 #           data/frs/FRS_PROGRAM_LINKS.csv; sources 00_panel_functions.R
 # OUTPUTS:  output/panels/CE_PANEL_2015_2023/VIOL_PANEL_2015_2023.csv
 #           (+ .rds twin with exact column types)
@@ -56,6 +57,19 @@
 #     CE_LOCATION_STATE  <- STATE
 #     CE_EPA_REGION      <- REGION
 #     CE_LAND_TYPE       <- LAND_TYPE (last non-missing)
+#
+#   Coordinate slots (from HD_MASTER, one block per facility repeated across
+#   all 108 months, taken from the handler's most recent handler record):
+#     HD_PREFERRED_LATITUDE, HD_PREFERRED_LONGITUDE, HD_PREFERRED_COORD_SOURCE
+#                        The pair to use and where it came from, which is the
+#                        hand-placed pair, else the FRS pair, else the pair the
+#                        record reported, else a pair another record of the same
+#                        handler reported ("MANUAL", "FRS", "HD", "HD_OTHER").
+#     HD_LATITUDE_2-5, HD_LONGITUDE_2-5, HD_COORD_SOURCE_2-5
+#                        The pairs the preference order set aside, so a facility
+#                        whose sources disagree can be seen to. Empty where the
+#                        facility has no further pair. The ranking is documented
+#                        in the 02_modular_master_files README.
 #
 #   Violation fields (month level; empty when the month has no violation; 68.3%
 #   of active months hold more than one violation, a far denser cell than in the
@@ -162,6 +176,7 @@ source("code/modules/03_panels/rcrainfo/00_panel_functions.R")
 
 # Inputs, output, and the panel year range.
 ce_file  <- "output/modular_master_files/CE_MASTER.csv"
+hd_file  <- "output/modular_master_files/HD_MASTER.csv"
 frs_file <- "data/frs/FRS_PROGRAM_LINKS.csv"
 out_file <- "output/panels/CE_PANEL_2015_2023/VIOL_PANEL_2015_2023.csv"
 years    <- 2015L:2023L
@@ -307,9 +322,13 @@ attrs <- viols |>
             CE_LAND_TYPE      = last_known(LAND_TYPE),
             .groups = "drop")
 
-# -- 4. FRS: Facility Registry Service ID ---------------------------------------
-# Same link as the other panels (see read_frs_links() in 00_panel_functions.R).
-frs <- read_frs_links(ids, frs_file)
+# -- 4. FRS ID and the coordinate slot block ------------------------------------
+# Same link as the other panels (see read_frs_links() in 00_panel_functions.R),
+# and the same facility-level coordinate block every panel carries (see
+# read_hd_coordinates()), which is the one thing this panel takes from the
+# Handler master.
+frs       <- read_frs_links(ids, frs_file)
+hd_coords <- read_hd_coordinates(ids, hd_file)
 
 # -- 5. Balanced grid, assemble, write ------------------------------------------
 # expand_grid() emits rows already sorted HANDLER_ID x YEAR x MONTH and the left
@@ -323,8 +342,9 @@ count_cols <- c("CE_CITATION_NUM",
 
 out <- expand_grid(HANDLER_ID = ids, YEAR = years, MONTH = 1:12) |>
   # Attach the identifier and the constant handler attributes on ID alone.
-  left_join(frs,   by = "HANDLER_ID") |>
-  left_join(attrs, by = "HANDLER_ID") |>
+  left_join(frs,       by = "HANDLER_ID") |>
+  left_join(hd_coords, by = "HANDLER_ID") |>
+  left_join(attrs,     by = "HANDLER_ID") |>
   # Attach per-month aggregates; months with no violation get NA columns.
   left_join(agg,   by = c("HANDLER_ID", "YEAR", "MONTH")) |>
   # Replace NAs in the count columns with 0, then derive the CE_ANY_* flags.
@@ -343,6 +363,7 @@ out <- expand_grid(HANDLER_ID = ids, YEAR = years, MONTH = 1:12) |>
   # Final panel column order.
   select(HANDLER_ID, FRS_ID, YEAR, MONTH,
          CE_ACTIVITY_STATE, CE_LOCATION_STATE, CE_EPA_REGION, CE_LAND_TYPE,
+         all_of(unname(hd_coord_map)),
          CE_VIOL_STATE,
          CE_ANY_VIOL,       CE_TOTAL_VIOL,
          CE_ANY_STATE_VIOL, CE_TOTAL_STATE_VIOL,

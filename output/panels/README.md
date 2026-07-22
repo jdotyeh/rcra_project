@@ -2,8 +2,8 @@
 
 The facility panels, built by `code/modules/03_panels/`. These are the analytical
 endpoint of the project, and they are small enough to be committed to the
-repository. Each panel lives in its own subfolder with a README that documents it
-column by column.
+repository. Each panel lives in a subfolder and carries its own decision record
+documenting it column by column.
 
 - `BR_PANEL_2015_2023_BALANCED/` is the balanced facility-cycle panel of handlers
   recognized as an LQG or a TSDF in all five Biennial Report cycles from 2015
@@ -13,7 +13,8 @@ column by column.
 - `CE_PANEL_2015_2023/` holds the three facility-month panels drawn from the
   Compliance Monitoring and Enforcement master, one of compliance evaluations,
   one of enforcement actions, and one of determined violations, each covering
-  every month from January 2015 through December 2023.
+  every month from January 2015 through December 2023 and each carrying its own
+  decision record in the folder.
 - `summary/` holds descriptive summaries of the balanced panel.
 
 Every panel attaches a facility registry identifier through the FRS link. The

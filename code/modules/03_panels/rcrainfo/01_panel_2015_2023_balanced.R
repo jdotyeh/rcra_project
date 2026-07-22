@@ -66,6 +66,14 @@
 #                        HD_EPA_REGION          <- REGION
 #                        HD_LOCATION_LATITUDE   <- LOCATION_LATITUDE
 #                        HD_LOCATION_LONGITUDE  <- LOCATION_LONGITUDE
+#                        HD_PREFERRED_LATITUDE / HD_PREFERRED_LONGITUDE /
+#                          HD_PREFERRED_COORD_SOURCE and HD_LATITUDE_2-5 /
+#                          HD_LONGITUDE_2-5 / HD_COORD_SOURCE_2-5 <- the master's
+#                          coordinate slot block. These are facility-level rather
+#                          than facility-year: the block is taken whole from the
+#                          handler's most recent record and repeated across the
+#                          facility's cycles, so it sits outside the dominance
+#                          rules above (see read_hd_coordinates()).
 #                        NAICS4, NAICS6_1-4     <- NAICS_CODE (all NAICS_SEQ)
 #                        HD_GENERATOR           <- FED_WASTE_GENERATOR (1->L,2->S,3->VS;
 #                          independent of BR_GENERATOR, resolved by duration then severity)

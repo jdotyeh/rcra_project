@@ -6,10 +6,12 @@
 # INPUTS:   data/rcrainfo/hd/*.csv (HD_HANDLER plus its dimension tables),
 #           data/frs/FRS_FACILITIES.csv, data/frs/FRS_PROGRAM_LINKS.csv;
 #           sources 00_function.R
-# OUTPUTS:  output/modular_master_files/HD_MASTER.csv
+# OUTPUTS:  output/modular_master_files/HD_MASTER.csv,
+#           /Users/junliangye/Misc/HD_COORDINATE_MANUAL_REVIEW.csv (written only
+#           where that folder exists)
 # AUTHOR:   Jason Ye
 # CREATED:  2026-07-08
-# UPDATED:  2026-07-21
+# UPDATED:  2026-07-22
 # =============================================================================
 #
 # Master file for the Handler (hd) module:
@@ -50,10 +52,29 @@
 # address, or when its handler holds only a few coordinate pairs, one of which
 # is the FRS pair with the rest within a kilometre of it. Everything else keeps
 # the coordinates the facility reported, because a registry identifier follows a
-# facility that may have moved. LOCATION_COORD_SOURCE records which rule, if
-# any, supplied the pair on the record, holding "HD", "FRS_ADDRESS", or
-# "FRS_COORDINATE". The rules and their thresholds are documented above
-# apply_frs_coordinates() in 00_function.R.
+# facility that may have moved. A last step overwrites the few handlers that
+# reach neither rule and hold a pair that is visibly wrong, from a hand-checked
+# table whose entries each name the source they were read from.
+# LOCATION_COORD_SOURCE records which rule, if any, supplied the pair on the
+# record, holding "HD", "FRS_ADDRESS", "FRS_COORDINATE", or "MANUAL". The rules
+# and their thresholds are documented above apply_frs_coordinates() in
+# 00_function.R, and the manual table above apply_manual_coordinates().
+#
+# Beside those three columns the master carries a slot block that answers the
+# wider question of every pair available for a record at all, ranked, without
+# overwriting anything. PREFERRED_LATITUDE, PREFERRED_LONGITUDE, and
+# PREFERRED_COORD_SOURCE hold the pair to use, which is the hand-placed pair
+# where one exists, otherwise the FRS pair whenever the handler resolves to one,
+# otherwise the pair the record itself reports if it is valid, otherwise a pair
+# another record of the same handler reports. LATITUDE_2 onwards hold the pairs
+# the preference order set aside, so a facility whose sources disagree can be
+# seen to. A pair that repeats one already in a higher slot takes no slot of its
+# own. The order and its reasoning are documented above add_coordinate_slots().
+#
+# The facilities that no source can place are the ones a person has to find by
+# hand, and they are written out separately as HD_COORDINATE_MANUAL_REVIEW.csv,
+# each with the address to search on and the reason both automatic sources
+# failed.
 #
 # All columns are read as character so zero-padded identifiers and yyyymmdd
 # date stamps survive verbatim. Inputs are large (HD_HANDLER alone is 2.2 GB),
@@ -64,12 +85,25 @@
 # =============================================================================
 
 # Shared master-file helpers: read_module(), the two unknown-recode helpers,
-# convert_indicators(), and apply_frs_coordinates(). Loads tidyverse.
+# convert_indicators(), and the coordinate functions. Loads tidyverse.
 source("code/modules/02_modular_master_files/rcrainfo/00_function.R")
 
 # Raw HD module folder and the final master output path.
 hd_dir   <- "data/rcrainfo/hd"
 out_file <- "output/modular_master_files/HD_MASTER.csv"
+
+# The list of facilities no source can place is working material for a manual
+# search rather than a deliverable of the build, so it is written to the Misc
+# folder outside the repository, and only where that folder exists.
+review_file <- "/Users/junliangye/Misc/HD_COORDINATE_MANUAL_REVIEW.csv"
+
+# How many coordinate slots the master carries. The block is this wide on every
+# run whether or not the data fills it; add_coordinate_slots() reports the
+# deepest slot the data actually reaches, which is what to set this from. Five
+# holds every pair for all but 195 of the 2,056,431 handler-and-reported-pair
+# combinations in the 2026-07-05 export, the exceptions being the nineteen
+# handlers that have reported five or more distinct pairs (module README).
+coord_slots <- 5L
 
 # Thin wrapper around read_module() that fixes the HD folder.
 read_hd <- function(file) read_module(hd_dir, file)
@@ -142,14 +176,45 @@ handler <- convert_indicators(handler, c(
   pre2010_iret, "TRANSFER_FACILITY", pre2016_trade, pre2017_flags,
   pre2019_subp))
 
-# ---- FRS coordinates --------------------------------------------------------
+# ---- Coordinates ------------------------------------------------------------
+# Everything in this section runs before the dimension joins, while the table is
+# still one row per source record, so the address normalisation and the
+# coordinate joins never see the fanout the joins below introduce.
+
+# The Handler-ID-to-FRS link and the pair behind it, resolved once from the two
+# FRS files and used by both of the steps that follow.
+frs_pairs <- read_frs_pairs(unique(handler$HANDLER_ID))
+
+# The ranked slot block. It runs first because the HD slot is the pair the
+# facility reported, which the override below is about to replace on the records
+# it reaches.
+handler <- add_coordinate_slots(handler, frs_pairs, max_slots = coord_slots)
+
+# The facilities left without a pair from any source, written out for a manual
+# search. Building the list needs the handler table at record grain, which is
+# also why it happens here rather than at the end of the script.
+review <- coordinate_review_list(handler, frs_pairs)
+if (dir.exists(dirname(review_file))) {
+  write_csv(review, review_file, na = "")
+  message("Manual coordinate review list: ", nrow(review),
+          " handlers written to ", review_file)
+} else {
+  message("Manual coordinate review list not written: ", dirname(review_file),
+          " does not exist")
+}
+rm(review); invisible(gc())
+
 # Bring in the Facility Registry Service coordinates on the records where the
 # address or the handler's own coordinates show the two sources describe the
 # same place, and stamp LOCATION_COORD_SOURCE with the rule that supplied each
-# record's pair. This runs before the dimension joins, while the table is still
-# one row per source record, so the address normalisation and the two joins
-# never see the fanout the joins below introduce.
-handler <- apply_frs_coordinates(handler)
+# record's pair.
+handler <- apply_frs_coordinates(handler, frs_pairs)
+rm(frs_pairs); invisible(gc())
+
+# The handful of handlers the two FRS rules do not reach and whose reported pair
+# is visibly wrong take a hand-checked pair instead, stamped "MANUAL". The table
+# and the source of each entry are documented above apply_manual_coordinates().
+handler <- apply_manual_coordinates(handler)
 
 # Site-level basics: REGION and TRIBAL_ID join on HANDLER_ID only.
 basic <- read_hd("HD_BASIC.csv") |>
@@ -242,6 +307,8 @@ master <- master |>
     LOCATION_STREET_NO, LOCATION_STREET1, LOCATION_STREET2, LOCATION_CITY,
     COUNTY_CODE, LOCATION_STATE, TRIBAL_ID, REGION, LOCATION_ZIP,
     LOCATION_LATITUDE, LOCATION_LONGITUDE, LOCATION_COORD_SOURCE,
+    # Ranked coordinate slots: the preferred pair, then the alternates
+    all_of(coord_slot_cols(coord_slots)),
     STATE_DISTRICT_OWNER, STATE_DISTRICT,
     # Contact information: mailing address
     MAIL_STREET_NO, MAIL_STREET1, MAIL_STREET2, MAIL_CITY, MAIL_STATE,

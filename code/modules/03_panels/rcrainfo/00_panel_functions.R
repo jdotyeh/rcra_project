@@ -91,10 +91,10 @@ write_panel <- function(out, out_file, rds = FALSE) {
 # ---- Enforcement-type reference and crosswalk (used by the ENF panel) --------
 
 # The 37 nationally-defined enforcement types, read from the reference table in
-# resources/CME-Enforcement-Type.md. That file reproduces the RCRAInfo
+# resources/CE-Enforcement-Type.md. That file reproduces the RCRAInfo
 # Nationally-Defined Values page for Enforcement Type and is the single source of
 # truth for which codes count as defined and for the name each one carries.
-read_enf_type_defined <- function(file = "resources/CME-Enforcement-Type.md") {
+read_enf_type_defined <- function(file = "resources/CE-Enforcement-Type.md") {
   # Keep only the pipe-table rows and drop the alignment rule underneath the
   # header, then split each row into its cells.
   rows  <- str_subset(readLines(file, warn = FALSE), "^\\|")
@@ -108,14 +108,14 @@ read_enf_type_defined <- function(file = "resources/CME-Enforcement-Type.md") {
 }
 
 # The state-specific-to-defined crosswalk, read from the decision record in
-# resources/CME-Enforcement-Type-Crosswalk.md. Every bullet under its "Mapping"
+# resources/CE-Enforcement-Type-Crosswalk.md. Every bullet under its "Mapping"
 # heading names one state code, one description as it is written in CE_MASTER,
 # and the defined code that description was matched to, with 999 standing for a
 # pair that no defined code covers. A bullet also carries CE_ENF_FORMAL or
 # CE_ENF_INFORMAL, which is only informative on the 999 bullets, where the
 # description settles the class that the matched code cannot.
 read_enf_type_crosswalk <- function(
-    file = "resources/CME-Enforcement-Type-Crosswalk.md") {
+    file = "resources/CE-Enforcement-Type-Crosswalk.md") {
   ln <- readLines(file, warn = FALSE)
   # Read only the mapping section, which runs from its heading to the next one.
   ln <- ln[seq(which(str_detect(ln, "^## Mapping\\s*$"))[1] + 1, length(ln))]
@@ -150,7 +150,7 @@ read_enf_type_crosswalk <- function(
 # set and separate instruments that the defined codes collapse together, such as
 # the warning letters and notices of violation that all match 120.
 read_enf_type_categories <- function(
-    file = "resources/CME-Enforcement-Type-Crosswalk.md") {
+    file = "resources/CE-Enforcement-Type-Crosswalk.md") {
   ln <- readLines(file, warn = FALSE)
   ln <- ln[seq(which(str_detect(ln, "^## Proposed new categories\\s*$"))[1] + 1,
                length(ln))]
@@ -263,10 +263,67 @@ hd_all_map <- c(hd_attr_map,
                 FED_WASTE_GENERATOR   = "HD_GENERATOR",
                 TSD_ACTIVITY          = "HD_TSDF")
 
+# ---- Coordinate slots -------------------------------------------------------
+#
+# The Handler master carries, beside the record's own resolved pair, a ranked
+# block of every coordinate pair available for the record at all, whose first
+# slot is the pair to use. Every input to that block is a property of the
+# facility rather than of the year -- the hand-placed pair, the FRS pair, and
+# the set of pairs the handler has reported -- so the panels carry one block per
+# facility, repeated across the facility's rows, in the same way they carry
+# FRS_ID. All five panels carry the same block under the same names.
+#
+# Within a handler the block differs between records only in which of the
+# handler's pairs sits in the HD slot, since the alternates hold the same set
+# either way, so the block is taken from the handler's most recent record. That
+# is the convention the CE panels already use for their handler attributes.
+
+# The block as HD_MASTER writes it, mirroring coord_slot_cols() in the master
+# stage's 00_function.R, which is where the width is set. Panel names take the
+# HD_ prefix every other handler-master column carries.
+hd_coord_src <- c("PREFERRED_LATITUDE", "PREFERRED_LONGITUDE",
+                  "PREFERRED_COORD_SOURCE",
+                  as.vector(rbind(paste0("LATITUDE_",     2:5),
+                                  paste0("LONGITUDE_",    2:5),
+                                  paste0("COORD_SOURCE_", 2:5))))
+hd_coord_map <- setNames(paste0("HD_", hd_coord_src), hd_coord_src)
+
+# One coordinate block per handler, for the handlers given. A slot column the
+# master does not hold is a change to the master's slot width rather than a
+# missing value, so it stops the build and says which name went missing.
+read_hd_coordinates <- function(ids,
+                                hd_file = "output/modular_master_files/HD_MASTER.csv") {
+  header <- names(read_csv(hd_file, n_max = 0, show_col_types = FALSE,
+                           col_types = cols(.default = "c")))
+  missing_cols <- setdiff(hd_coord_src, header)
+  if (length(missing_cols))
+    stop("Coordinate slot column(s) missing from ", hd_file, ": ",
+         paste(missing_cols, collapse = ", "))
+
+  read_csv(hd_file, col_types = cols(.default = "c"), show_col_types = FALSE,
+           col_select = c(HANDLER_ID, SOURCE_TYPE, SEQ_NUMBER, RECEIVE_DATE,
+                          all_of(hd_coord_src))) |>
+    filter(HANDLER_ID %in% ids) |>
+    # The master repeats each source record across its dimension cross, and the
+    # block is constant within a source record, so the cross collapses here.
+    distinct() |>
+    # Most recent record first. Dates are fixed-width yyyymmdd so they sort as
+    # strings, records with no date sort last, and the sequence number and
+    # source type settle same-day records deterministically.
+    arrange(HANDLER_ID, desc(RECEIVE_DATE),
+            desc(suppressWarnings(as.integer(SEQ_NUMBER))), SOURCE_TYPE) |>
+    group_by(HANDLER_ID) |>
+    slice(1) |>
+    ungroup() |>
+    select(HANDLER_ID, all_of(hd_coord_src)) |>
+    rename_with(\(x) unname(hd_coord_map[x]), all_of(hd_coord_src))
+}
+
 # Final HD_* block order in the written panel (after the BR_* columns).
 hd_order <- c(
   "HD_ACTIVITY_STATE", "HD_LOCATION_STATE", "HD_LOCATION_COUNTY", "HD_EPA_REGION",
   "HD_LOCATION_LATITUDE", "HD_LOCATION_LONGITUDE",
+  unname(hd_coord_map),
   "NAICS4", "NAICS6_1", "NAICS6_2", "NAICS6_3", "NAICS6_4", "HD_RECORD_COUNT",
   "HD_GENERATOR", "HD_STATE_GENERATOR", "HD_SHORT_TERM_GENERATOR",
   "HD_TSDF", "HD_RECYCLER_STORAGE", "HD_RECYCLER_NONSTORAGE",
@@ -705,14 +762,18 @@ build_br_panel <- function(balanced, out_file,
   dom_state <- dominant(rec, windows, "STATE_WASTE_GENERATOR", state_sev, "HD_STATE_GENERATOR")
   # The batch of remaining HD attributes (1/0 indicators + location fields).
   dom_attrs <- dominant_attrs(rec, panel_years)
+  # The coordinate slot block, one row per handler rather than per facility-year.
+  hd_coords <- read_hd_coordinates(ids, hd_file)
 
   # FRS: Facility Registry Service ID
   frs <- read_frs_links(ids, frs_file)
 
   # 3. Assemble and write
   out <- panel |>
-    # Attach every derived piece by (HANDLER_ID, REPORT_CYCLE); FRS joins on ID only.
+    # Attach every derived piece by (HANDLER_ID, REPORT_CYCLE); FRS and the
+    # coordinate slots are facility-level and join on ID only.
     left_join(frs,       by = "HANDLER_ID") |>
+    left_join(hd_coords, by = "HANDLER_ID") |>
     left_join(dom_gen,   by = c("HANDLER_ID", "REPORT_CYCLE")) |>
     left_join(dom_tsd,   by = c("HANDLER_ID", "REPORT_CYCLE")) |>
     left_join(dom_state, by = c("HANDLER_ID", "REPORT_CYCLE")) |>

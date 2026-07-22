@@ -4,6 +4,7 @@
 #           evaluations from CE_MASTER, months 2015-01 through 2023-12, with the
 #           FRS link.
 # INPUTS:   output/modular_master_files/CE_MASTER.csv,
+#           output/modular_master_files/HD_MASTER.csv (coordinate slots only),
 #           data/frs/FRS_PROGRAM_LINKS.csv; sources 00_panel_functions.R
 # OUTPUTS:  output/panels/CE_PANEL_2015_2023/EVAL_PANEL_2015_2023.csv
 #           (+ .rds twin with exact column types)
@@ -43,6 +44,19 @@
 #     CE_EPA_REGION      <- REGION
 #     CE_LAND_TYPE       <- LAND_TYPE (last non-missing; ~4.5% of evaluation
 #                           records leave it blank)
+#
+#   Coordinate slots (from HD_MASTER, one block per facility repeated across
+#   all 108 months, taken from the handler's most recent handler record):
+#     HD_PREFERRED_LATITUDE, HD_PREFERRED_LONGITUDE, HD_PREFERRED_COORD_SOURCE
+#                        The pair to use and where it came from, which is the
+#                        hand-placed pair, else the FRS pair, else the pair the
+#                        record reported, else a pair another record of the same
+#                        handler reported ("MANUAL", "FRS", "HD", "HD_OTHER").
+#     HD_LATITUDE_2-5, HD_LONGITUDE_2-5, HD_COORD_SOURCE_2-5
+#                        The pairs the preference order set aside, so a facility
+#                        whose sources disagree can be seen to. Empty where the
+#                        facility has no further pair. The ranking is documented
+#                        in the 02_modular_master_files README.
 #
 #   Evaluation fields (month-level; empty when the month has no evaluation;
 #   8.6% of evaluation months hold >1 evaluation, so multi-valued fields are
@@ -104,8 +118,10 @@
 # write_panel(). Loads tidyverse.
 source("code/modules/03_panels/rcrainfo/00_panel_functions.R")
 
-# Inputs, output, and the panel year range.
+# Inputs, output, and the panel year range. The Handler master is read only for
+# the coordinate slot block; no other column of it reaches this panel.
 ce_file  <- "output/modular_master_files/CE_MASTER.csv"
+hd_file  <- "output/modular_master_files/HD_MASTER.csv"
 frs_file <- "data/frs/FRS_PROGRAM_LINKS.csv"
 out_file <- "output/panels/CE_PANEL_2015_2023/EVAL_PANEL_2015_2023.csv"
 years    <- 2015L:2023L
@@ -190,18 +206,23 @@ attrs <- evals |>
             CE_LAND_TYPE      = last_known(LAND_TYPE),
             .groups = "drop")
 
-# -- 4. FRS: Facility Registry Service ID ---------------------------------------
-# Same link as the BR panels (see read_frs_links() in 00_panel_functions.R).
-ids <- unique(evals$HANDLER_ID)
-frs <- read_frs_links(ids, frs_file)
+# -- 4. FRS ID and the coordinate slot block ------------------------------------
+# Same link as the BR panels (see read_frs_links() in 00_panel_functions.R), and
+# the same facility-level coordinate block every panel carries (see
+# read_hd_coordinates()), which is the one thing this panel takes from the
+# Handler master.
+ids       <- unique(evals$HANDLER_ID)
+frs       <- read_frs_links(ids, frs_file)
+hd_coords <- read_hd_coordinates(ids, hd_file)
 
 # -- 5. Balanced grid, assemble, write ------------------------------------------
 # expand_grid() emits rows already sorted HANDLER_ID x YEAR x MONTH and the
 # left joins preserve that order, so no final arrange over 9.5M rows is needed.
 out <- expand_grid(HANDLER_ID = sort(ids), YEAR = years, MONTH = 1:12) |>
   # Attach the identifier and the constant handler attributes on ID alone.
-  left_join(frs,   by = "HANDLER_ID") |>
-  left_join(attrs, by = "HANDLER_ID") |>
+  left_join(frs,       by = "HANDLER_ID") |>
+  left_join(hd_coords, by = "HANDLER_ID") |>
+  left_join(attrs,     by = "HANDLER_ID") |>
   # Attach the per-month aggregates; months with no evaluation get NA columns.
   left_join(agg,   by = c("HANDLER_ID", "YEAR", "MONTH")) |>
   # Fill count and indicator columns with 0 on months that had no evaluation.
@@ -220,6 +241,7 @@ out <- expand_grid(HANDLER_ID = sort(ids), YEAR = years, MONTH = 1:12) |>
   # Final panel column order.
   select(HANDLER_ID, FRS_ID, YEAR, MONTH,
          CE_ACTIVITY_STATE, CE_LOCATION_STATE, CE_EPA_REGION, CE_LAND_TYPE,
+         all_of(unname(hd_coord_map)),
          CE_EVAL_STATE, CE_EVAL_AGENCY, CE_EVAL_SUBORG,
          CE_EVAL_DATE_NUM, CE_EVAL_DATE,
          CE_ANY_EVAL,  CE_TOTAL_EVALS,
