@@ -248,12 +248,12 @@ apply_frs_coordinates <- function(handler,
     filter(n_ids == 1L) |>
     select(-n_ids)
 
-  # The Facilities file's column names come from the ECHO FRS download summary,
-  # and a rename on EPA's side would otherwise surface as an unreadable error
-  # from the column selection below. Read the header alone and say which name
-  # went missing.
-  frs_cols <- c("REGISTRY_ID", "LOCATION_ADDRESS", "CITY_NAME", "STATE_CODE",
-                "POSTAL_CODE", "LATITUDE83", "LONGITUDE83")
+  # The Facilities file's column names come from the ECHO FRS national download
+  # (FRS_FACILITIES.csv), and a rename on EPA's side would otherwise surface as
+  # an unreadable error from the column selection below. Read the header alone
+  # and say which name went missing.
+  frs_cols <- c("REGISTRY_ID", "FAC_STREET", "FAC_CITY", "FAC_STATE",
+                "FAC_ZIP", "LATITUDE_MEASURE", "LONGITUDE_MEASURE")
   header <- names(read_csv(facilities_file, n_max = 0, show_col_types = FALSE,
                            col_types = cols(.default = "c")))
   missing_cols <- setdiff(frs_cols, header)
@@ -267,20 +267,20 @@ apply_frs_coordinates <- function(handler,
   # without a usable pair carry nothing worth importing and drop out here.
   frs <- read_csv(facilities_file, col_types = cols(.default = "c"),
                   show_col_types = FALSE,
-                  col_select = c(REGISTRY_ID, LOCATION_ADDRESS, CITY_NAME,
-                                 STATE_CODE, POSTAL_CODE, LATITUDE83, LONGITUDE83)) |>
+                  col_select = c(REGISTRY_ID, FAC_STREET, FAC_CITY,
+                                 FAC_STATE, FAC_ZIP, LATITUDE_MEASURE, LONGITUDE_MEASURE)) |>
     filter(REGISTRY_ID %in% link$FRS_ID) |>
-    mutate(frs_lat = suppressWarnings(as.numeric(LATITUDE83)),
-           frs_lon = suppressWarnings(as.numeric(LONGITUDE83))) |>
+    mutate(frs_lat = suppressWarnings(as.numeric(LATITUDE_MEASURE)),
+           frs_lon = suppressWarnings(as.numeric(LONGITUDE_MEASURE))) |>
     filter(valid_coord(frs_lat, frs_lon)) |>
     transmute(FRS_ID      = REGISTRY_ID,
               frs_lat, frs_lon,
-              frs_lat_chr = LATITUDE83,
-              frs_lon_chr = LONGITUDE83,
-              frs_street  = norm_address(LOCATION_ADDRESS),
-              frs_city    = norm_text(CITY_NAME),
-              frs_state   = norm_text(STATE_CODE),
-              frs_zip     = str_extract(POSTAL_CODE, "^[0-9]{5}")) |>
+              frs_lat_chr = LATITUDE_MEASURE,
+              frs_lon_chr = LONGITUDE_MEASURE,
+              frs_street  = norm_address(FAC_STREET),
+              frs_city    = norm_text(FAC_CITY),
+              frs_state   = norm_text(FAC_STATE),
+              frs_zip     = str_extract(FAC_ZIP, "^[0-9]{5}")) |>
     # A registry identifier that arrives twice with two different pairs cannot
     # settle which is the facility's, so it is dropped for the same reason.
     add_count(FRS_ID, name = "n_rows") |>

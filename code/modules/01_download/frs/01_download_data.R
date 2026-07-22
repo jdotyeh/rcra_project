@@ -17,8 +17,8 @@
 # carries the SIC and NAICS tables, which nothing downstream reads. Program
 # Links is what the panel stage reads, because it attaches the FRS REGISTRY_ID
 # to each RCRAInfo handler. Facilities is what the Handler master reads, because
-# it holds the address and the geocoded LATITUDE83 / LONGITUDE83 pair that the
-# master's coordinate override compares against and imports.
+# it holds the address and the geocoded LATITUDE_MEASURE / LONGITUDE_MEASURE
+# pair that the master's coordinate override compares against and imports.
 # Source: https://echo.epa.gov/tools/data-downloads (FRS download summary)
 # Run from the repo root.
 

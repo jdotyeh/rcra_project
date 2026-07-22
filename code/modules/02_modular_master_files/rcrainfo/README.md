@@ -81,6 +81,36 @@ the Handler master, whose raw values are dozens of codes rather than Y/N, and
 `AUTHORITY_REPOSITORY` in the Corrective Action master, which despite its
 name carries the codes 1/2/3/X.
 
+## FRS Coordinates
+
+The Handler master overwrites the latitude and longitude a facility reported
+with the ones the EPA Facility Registry Service publishes for the same place,
+on the records where the two sources agree that they describe one facility.
+`apply_frs_coordinates()` in `00_function.R` runs the override, reading
+`data/frs/FRS_FACILITIES.csv` for the FRS pair and `data/frs/FRS_PROGRAM_LINKS.csv`
+for the Handler-ID-to-`REGISTRY_ID` link. A handler that resolves to more than
+one registry identifier, or a registry identifier that arrives on more than one
+facility row with different coordinates, names more than one place and is left
+with the coordinates it reported, because there is no single pair to import.
+
+A record takes the FRS pair under either of two rules. The **address rule**
+matches the record's normalised street and state against the FRS facility's,
+together with either the city or the ZIP code, and is evidence about the record
+itself. The **coordinate-anchor rule** applies when the handler carries at most
+five distinct reported pairs, one of them the FRS pair at four decimal places,
+with every other pair within a kilometre of it, so the FRS pair is the settled
+centre of a tight cluster. A record that meets neither rule keeps what it
+reported. The coordinates FRS publishes are carried across as the strings the
+file holds, so the override introduces no rounding.
+
+The source of each record's final pair is written to `LOCATION_COORD_SOURCE`.
+
+| Value | Meaning |
+|-------|---------|
+| `HD` | The record keeps the coordinates the facility reported. |
+| `FRS_ADDRESS` | The FRS pair was imported because the record's address matched the FRS facility's. |
+| `FRS_COORDINATE` | The FRS pair was imported because it anchored the handler's cluster of reported pairs. |
+
 ## Structure Charts
 
 One chart per master file, mapping the fields a master carries and how they nest.
@@ -112,7 +142,7 @@ BASIC INFORMATION
 
 GEOGRAPHICS & DEMOGRAPHICS
 ├─ Accessibility code             (B,C,F,L)
-├─ Primary site location          (street no/name, city, county code, state, tribal ID, EPA region, ZIP, lat, long)
+├─ Primary site location          (street no/name, city, county code, state, tribal ID, EPA region, ZIP, lat, long, coord source)
 └─ State district                 (owner + code)
 
 CONTACT INFORMATION

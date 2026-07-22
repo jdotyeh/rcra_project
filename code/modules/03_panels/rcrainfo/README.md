@@ -16,9 +16,10 @@ the rest of the project. From the repository root, run
 Rscript code/modules/03_panels/rcrainfo/build_panels.R
 ```
 
-It runs setup, downloads the FRS Program Links file and the RCRAInfo tables only
-if the raw inputs are missing, builds the Handler and Compliance master files
-only if they are missing, and then builds the five panels. It does not run the
+It runs setup, downloads the FRS Program Links and Facilities files and the
+RCRAInfo tables only if the raw inputs are missing, builds the Handler and
+Compliance master files only if they are missing, and then builds the five
+panels. It does not run the
 descriptive summary script, which is optional and can be run on its own
 afterward. The full-project master script, `code/master.R`, also builds the
 panels as its final stage and deliberately skips this shortcut so the work is
