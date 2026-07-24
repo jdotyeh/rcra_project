@@ -33,6 +33,16 @@ The topic briefs then go one level deeper.
 - [10_epa_forms.md](10_epa_forms.md) is the three EPA forms behind the records,
   the notification, the Hazardous Waste Report, and the Part A application, and
   the values EPA computes from the Biennial Report filings.
+- [11_manifests_and_shipment_tracking.md](11_manifests_and_shipment_tracking.md)
+  is the manifest that follows each shipment of waste and the electronic system
+  that now collects it.
+- [12_waste_codes_and_management_methods.md](12_waste_codes_and_management_methods.md)
+  is the code vocabulary for what a waste is, where it came from, its form, and
+  what was done with it.
+- [13_universal_waste_used_oil_and_recycling.md](13_universal_waste_used_oil_and_recycling.md)
+  is the lighter regimes inside the program and the facility roles they create.
+- [14_regulatory_citations.md](14_regulatory_citations.md) is how a violation
+  points at the requirement it rests on and who owns the rule cited.
 
 These briefs are written from public EPA program materials and from the
 state-by-state reporting reference in `resources/table.md`. They are background,

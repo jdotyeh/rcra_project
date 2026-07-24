@@ -537,19 +537,32 @@ apply_manual_coordinates <- function(handler, manual = manual_coords) {
 # are the strings each source publishes, so no rounding is introduced.
 #
 # The first slot is named PREFERRED_LATITUDE, PREFERRED_LONGITUDE, and
-# PREFERRED_COORD_SOURCE, and the rest are numbered from two. The block is a
-# fixed max_slots wide whether or not the data fills it, so the master's columns
-# do not move when the input changes; the run message reports the deepest slot
-# actually reached, which is what the parameter should be set from.
+# PREFERRED_COORD_SOURCE, and the alternates carry an ALT_ stem and are numbered
+# from two, as ALT_LATITUDE_2 and so on. The stem is there because the master
+# also holds LOCATION_LATITUDE and LOCATION_LONGITUDE, which are the record's
+# own resolved pair rather than a slot, and a bare LATITUDE_2 beside them reads
+# as a second location column rather than as a ranked alternative. The block is
+# a fixed max_slots wide whether or not the data fills it, so the master's
+# columns do not move when the input changes; the run message reports the
+# deepest slot actually reached, which is what the parameter should be set from.
 
 # The slot column block, in order, for a given number of slots. The master's
 # select() names the block through this helper so the two cannot drift apart.
 coord_slot_cols <- function(max_slots = 5L) {
   rest <- seq_len(max_slots)[-1]
   c("PREFERRED_LATITUDE", "PREFERRED_LONGITUDE", "PREFERRED_COORD_SOURCE",
-    as.vector(rbind(paste0("LATITUDE_",     rest),
-                    paste0("LONGITUDE_",    rest),
-                    paste0("COORD_SOURCE_", rest))))
+    as.vector(rbind(paste0("ALT_LATITUDE_",     rest),
+                    paste0("ALT_LONGITUDE_",    rest),
+                    paste0("ALT_COORD_SOURCE_", rest))))
+}
+
+# Name one pivoted slot column: slot 1 is the preferred pair, the rest are the
+# ranked alternates. Takes names of the form LATITUDE_3 and returns either
+# PREFERRED_LATITUDE or ALT_LATITUDE_3.
+coord_slot_name <- function(x) {
+  n    <- as.integer(str_extract(x, "[0-9]+$"))
+  stem <- str_remove(x, "_[0-9]+$")
+  if_else(n == 1L, paste0("PREFERRED_", stem), paste0("ALT_", stem, "_", n))
 }
 
 # Add the slot block to the handler table. Call this before
@@ -659,9 +672,8 @@ add_coordinate_slots <- function(handler,
                 names_from  = slot,
                 values_from = c(LATITUDE, LONGITUDE, COORD_SOURCE),
                 names_glue  = "{.value}_{slot}") |>
-    rename(PREFERRED_LATITUDE     = LATITUDE_1,
-           PREFERRED_LONGITUDE    = LONGITUDE_1,
-           PREFERRED_COORD_SOURCE = COORD_SOURCE_1)
+    rename_with(coord_slot_name,
+                -c(HANDLER_ID, LOCATION_LATITUDE, LOCATION_LONGITUDE))
 
   # Give the block its full width even where the data does not reach it, so the
   # master's columns are the same on every run.

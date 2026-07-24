@@ -119,14 +119,14 @@ explains it.
 
 | Program function | RCRAInfo module | Brief |
 |---|---|---|
-| Who a site is and what it does | Handler (hd) | [02](02_generators_and_handlers.md), [09](09_facility_identifiers.md) |
-| Periodic waste reporting | Biennial Report (br) | [01](01_biennial_report.md) |
-| Inspections, violations, enforcement | Compliance Monitoring and Enforcement (ce) | [03](03_compliance_and_enforcement.md) |
+| Who a site is and what it does | Handler (hd) | [02](02_generators_and_handlers.md), [09](09_facility_identifiers.md), [13](13_universal_waste_used_oil_and_recycling.md) |
+| Periodic waste reporting | Biennial Report (br) | [01](01_biennial_report.md), [12](12_waste_codes_and_management_methods.md) |
+| Inspections, violations, enforcement | Compliance Monitoring and Enforcement (ce) | [03](03_compliance_and_enforcement.md), [14](14_regulatory_citations.md) |
 | Cleanup of releases | Corrective Action (ca) | [05](05_corrective_action.md) |
 | Permits, closure, post-closure | Permitting (pm) | [06](06_permitting_and_closure.md) |
 | Proof of ability to pay | Financial Assurance (fa) | [07](07_financial_assurance.md) |
 | Cross-border waste movement | Waste Import Export Tracking System (wt) | [08](08_waste_import_export.md) |
-| Shipment tracking | e-Manifest (em) | [01](01_biennial_report.md), [09](09_facility_identifiers.md) |
+| Shipment tracking | e-Manifest (em) | [11](11_manifests_and_shipment_tracking.md) |
 
 Most of these records begin life on a small set of EPA forms. The notification,
 the Hazardous Waste Report, and the Part A permit application are described in
@@ -135,6 +135,6 @@ from the filings rather than collects on them.
 
 The panels built in `code/modules/03_panels/` sit on top of these modules. The
 balanced and unbalanced panels are drawn from the Biennial Report and the Handler
-module, and the evaluation and enforcement panels are drawn from the Compliance
-Monitoring and Enforcement module. The facts in these briefs are the reason those
-panels are built the way they are.
+module, and the evaluation, enforcement, and violation panels are drawn from the
+Compliance Monitoring and Enforcement module. The facts in these briefs are the
+reason those panels are built the way they are.

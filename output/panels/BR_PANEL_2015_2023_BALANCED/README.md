@@ -108,7 +108,7 @@ This document records every construction decision behind `BR_PANEL_2015_2023_BAL
 
 ### Decision 5. Elements Included from `HD_MASTER.csv` ###
 - **Decision**
-    - The panel attaches 32 facility attributes from the notification history in `HD_MASTER.csv`, prefixed `HD_`, five industry-code columns (`NAICS4`, `NAICS6_1` through `NAICS6_4`, governed by Decision 7), plus two constructed columns (`HD_RECORD_COUNT` and the conflict audit column of Decision 8), and a fifteen-column coordinate slot block. Each attribute is assigned one value per facility-year by class-specific dominance rules over the facility-year's calendar year, except the coordinate slots, which are facility-level and are repeated across the facility's cycles.
+    - The panel attaches 32 facility attributes from the notification history in `HD_MASTER.csv`, prefixed `HD_`, five industry-code columns (`NAICS4`, `NAICS6_1` through `NAICS6_4`, governed by Decision 7), plus two constructed columns (`HD_RECORD_COUNT` and the conflict audit column of Decision 8), and a six-column coordinate slot block. Each attribute is assigned one value per facility-year by class-specific dominance rules over the facility-year's calendar year, except the coordinate slots, which are facility-level and are repeated across the facility's cycles.
 - **Details**
     - Included elements, grouped, with their `HD_MASTER` source variables and a short description from the data dictionary.
 
@@ -120,14 +120,26 @@ This document records every construction decision behind `BR_PANEL_2015_2023_BAL
       | `HD_LOCATION_STATE` | `LOCATION_STATE` | State code of the facility's physical address. |
       | `HD_LOCATION_COUNTY` | `COUNTY_CODE` | FIPS code of the county in which the facility is located. |
       | `HD_EPA_REGION` | `REGION` | EPA region with which the facility is associated. |
-      | `HD_LOCATION_LATITUDE` | `LOCATION_LATITUDE` | Latitude of the facility location in decimal degrees. |
-      | `HD_LOCATION_LONGITUDE` | `LOCATION_LONGITUDE` | Longitude of the facility location in decimal degrees. |
+      | `HD_CYCLE_LATITUDE` | `LOCATION_LATITUDE` | Latitude of the facility location in decimal degrees, as the record that governs the cycle gives it. |
+      | `HD_CYCLE_LONGITUDE` | `LOCATION_LONGITUDE` | Longitude of the facility location in decimal degrees, on the same rule. |
+
+      The two coordinate families answer different questions and are named for
+      the difference. `HD_CYCLE_LATITUDE` and `HD_CYCLE_LONGITUDE` are
+      facility-year: they are resolved by the dominance rules of this decision,
+      so they change between cycles when the facility's records do, and they
+      hold what the record itself resolved to, which is the reported pair unless
+      the Handler master could show the record sits where FRS says. The slot
+      block below is facility-level and holds the best pair available for the
+      facility whatever its records say, so it does not move between cycles. In
+      this panel 919 of the 5,440 facilities (16.89%) report more than one
+      distinct pair across the window, and those are exactly the facilities the
+      cycle columns describe and the slot block cannot.
 
       Coordinate slots, which are facility-level rather than facility-year and
       so sit outside the dominance rules of this decision. The Handler master
-      ranks every coordinate pair available for a facility, and the block is
-      taken whole from the facility's most recent record and repeated across its
-      cycles. The ranking, the source codes, and the reason a pair can appear in
+      ranks every coordinate pair available for a facility and keeps five of
+      them; the panel carries the first two, taken from the facility's most
+      recent record and repeated across its cycles. The ranking, the source codes, and the reason a pair can appear in
       one slot and not another are documented in the [Handler master module README](../../../code/modules/02_modular_master_files/rcrainfo/README.md#coordinate-slots).
 
       | Element | Source variable | Description |
@@ -135,9 +147,9 @@ This document records every construction decision behind `BR_PANEL_2015_2023_BAL
       | `HD_PREFERRED_LATITUDE` | `PREFERRED_LATITUDE` | Latitude of the pair to use for the facility, in decimal degrees. |
       | `HD_PREFERRED_LONGITUDE` | `PREFERRED_LONGITUDE` | Longitude of the pair to use for the facility, in decimal degrees. |
       | `HD_PREFERRED_COORD_SOURCE` | `PREFERRED_COORD_SOURCE` | Where that pair came from, namely `MANUAL` for a hand-placed pair, `FRS` for the Facility Registry Service pair, `HD` for the pair the facility reported, and `HD_OTHER` for a pair on another of the facility's records. |
-      | `HD_LATITUDE_2`-`HD_LATITUDE_5` | `LATITUDE_2`-`LATITUDE_5` | Latitudes of the pairs the preference order set aside, empty where the facility has no further pair. |
-      | `HD_LONGITUDE_2`-`HD_LONGITUDE_5` | `LONGITUDE_2`-`LONGITUDE_5` | Longitudes of those pairs. |
-      | `HD_COORD_SOURCE_2`-`HD_COORD_SOURCE_5` | `COORD_SOURCE_2`-`COORD_SOURCE_5` | Where each of those pairs came from, on the same four codes. |
+      | `HD_ALT_LATITUDE_2` | `ALT_LATITUDE_2` | Latitude of the first pair the preference order set aside, empty where the facility has no second pair. |
+      | `HD_ALT_LONGITUDE_2` | `ALT_LONGITUDE_2` | Longitude of that pair. |
+      | `HD_ALT_COORD_SOURCE_2` | `ALT_COORD_SOURCE_2` | Where that pair came from, on the same four codes. |
 
       Industry
 
@@ -236,8 +248,10 @@ This document records every construction decision behind `BR_PANEL_2015_2023_BAL
     - Every panel facility-year carries at least one classified record, because the facility's own Biennial Report filing classifies to its cycle year. `HD_RECORD_COUNT` is 0 on 0 facility-years, exactly 1 on 18,237 (67.05%), and 2 or more on 8,963 (32.95%), with the 27,200 panel facility-years as baseline.
     - Missing values are nearly absent, because every member has a long filing history. With the same baseline, `HD_GENERATOR`, `HD_TSDF`, and the activity-state, state, county, and region fields are empty on 8 facility-years (0.03%) and `HD_STATE_GENERATOR` on 16 (0.06%). The corresponding shares in the unbalanced panel run 0.85 to 1.20 percent.
     - The unknown code surfaces mostly through the international-shipment flags: `HD_RECOGNIZED_TRADER_IMPORTER`, `HD_RECOGNIZED_TRADER_EXPORTER`, `HD_SLAB_IMPORTER`, and `HD_SLAB_EXPORTER` are "U" on 8,900 facility-years each (32.72%), because most of their timeline predates the flags' 12/20/2016 introduction. The next largest carriers are `HD_RECYCLER_NONSTORAGE` on 232 facility-years (0.85%), `HD_TRANSFER_FACILITY` on 33 (0.12%), and `HD_TSDF` on 17 (0.06%).
-    - The coordinate fields are now filled from the EPA Facility Registry Service. The Handler master overwrites a facility's reported latitude and longitude with the FRS pair for the same registry identifier wherever the two sources can be shown to describe one place, so the panel inherits FRS geography in place of the sparse notification coordinates; the rules and their thresholds are documented in the [Handler master module README](../../../code/modules/02_modular_master_files/rcrainfo/README.md#frs-coordinates). Coverage of `HD_LOCATION_LATITUDE` and `HD_LOCATION_LONGITUDE` rises from 11,476 facility-years (42.19%) before the override to 25,407 (93.41%) after it, leaving 1,793 facility-years (6.59%) empty, which are the facilities FRS could not match and for which state and county are still the fallback.
-    - The slot block reaches further than that pair, because it prefers the FRS pair wherever the facility resolves to one rather than only where the record can be shown to sit at the FRS address, and because it falls back to a pair on another of the facility's records. A facility-year is empty across the whole block only where no source can place the facility at all, and those facilities are listed for a manual search in `HD_COORDINATE_MANUAL_REVIEW.csv`. The block also carries its own provenance in `HD_PREFERRED_COORD_SOURCE`, where the earlier record-level `LOCATION_COORD_SOURCE` stayed behind in `HD_MASTER.csv`. Slot coverage and the share of facilities carrying an alternate pair are measured on the next rebuild and recorded here then, since the block is new to this schema.
+    - The coordinate fields are now filled from the EPA Facility Registry Service. The Handler master overwrites a facility's reported latitude and longitude with the FRS pair for the same registry identifier wherever the two sources can be shown to describe one place, so the panel inherits FRS geography in place of the sparse notification coordinates; the rules and their thresholds are documented in the [Handler master module README](../../../code/modules/02_modular_master_files/rcrainfo/README.md#frs-coordinates). Coverage of `HD_CYCLE_LATITUDE` and `HD_CYCLE_LONGITUDE` rises from 11,476 facility-years (42.19%) before the override to 25,407 (93.41%) after it, leaving 1,793 facility-years (6.59%) empty, which are the facilities FRS could not match and for which state and county are still the fallback.
+    - The slot block reaches further than that pair, because it prefers the FRS pair wherever the facility resolves to one rather than only where the record can be shown to sit at the FRS address, and because it falls back to a pair on another of the facility's records. `HD_PREFERRED_LATITUDE` and `HD_PREFERRED_LONGITUDE` are filled on 27,195 facility-years (99.98%), leaving 5 (0.02%) that no source can place; those facilities are listed for a manual search in `HD_COORDINATE_MANUAL_REVIEW.csv`. The block also carries its own provenance in `HD_PREFERRED_COORD_SOURCE`, where the earlier record-level `LOCATION_COORD_SOURCE` stayed behind in `HD_MASTER.csv`. The preferred pair is the FRS pair on all but a handful of facility-years, and 25,290 facility-years (92.98%), covering 5,058 of the 5,440 facilities, carry an alternate in the second slot.
+    - The alternate is usually the same site written to a different precision rather than a competing location. Measured as the distance from the preferred pair to the alternate, on the 25,290 facility-years that hold one: 6,275 (24.81%) are under 100 metres apart, 13,545 (53.56%) between 100 metres and a kilometre, 4,310 (17.04%) between one and ten kilometres, 980 (3.88%) between ten and a hundred, 165 (0.65%) between a hundred and a thousand, and 15 (0.06%) more than a thousand kilometres apart. The median gap is 267 metres and the 95th percentile is 8.3 kilometres. The 180 facility-years beyond a hundred kilometres are 36 facilities, and a gap that size is the signature of a transposed sign or a swapped pair rather than of a real disagreement about the site.
+    - The panel carries two of the master's five slots, so 9,190 facility-years (33.79%) hold a third or later pair that stays in `HD_MASTER.csv` alone. Those are lower-ranked copies of pairs the facility reported less often, and the run message reports the count rather than letting the cut pass for completeness.
 
 ### Decision 6. Elements Included from `BR_REPORTING_[year].csv` ###
 - **Decision**

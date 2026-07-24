@@ -228,8 +228,8 @@ hd_attr_map <- c(
   LOCATION_STATE                 = "HD_LOCATION_STATE",
   COUNTY_CODE                    = "HD_LOCATION_COUNTY",
   REGION                         = "HD_EPA_REGION",
-  LOCATION_LATITUDE              = "HD_LOCATION_LATITUDE",
-  LOCATION_LONGITUDE             = "HD_LOCATION_LONGITUDE",
+  LOCATION_LATITUDE              = "HD_CYCLE_LATITUDE",
+  LOCATION_LONGITUDE             = "HD_CYCLE_LONGITUDE",
   SHORT_TERM_GENERATOR           = "HD_SHORT_TERM_GENERATOR",
   RECYCLER_ACTIVITY              = "HD_RECYCLER_STORAGE",
   RECYCLER_ACTIVITY_NONSTORAGE   = "HD_RECYCLER_NONSTORAGE",
@@ -273,24 +273,65 @@ hd_all_map <- c(hd_attr_map,
 # facility, repeated across the facility's rows, in the same way they carry
 # FRS_ID. All five panels carry the same block under the same names.
 #
+# The panels carry two slots of it, the preferred pair and the first alternate,
+# where the master carries five. The second slot is where the disagreement a
+# reader would act on actually is: measured on the two Biennial Report panels,
+# the widest gap between the preferred pair and any alternate is under a
+# kilometre on 78 percent of the facility-years that hold one, and the pairs
+# beyond the second slot are further copies of the same site at a different
+# precision rather than a competing location. A reader who needs the whole
+# ranking has it in HD_MASTER.csv, which is why the master keeps all five, and
+# read_hd_coordinates() reports how many facilities carried a pair it did not
+# bring across rather than dropping them quietly.
+#
 # Within a handler the block differs between records only in which of the
 # handler's pairs sits in the HD slot, since the alternates hold the same set
 # either way, so the block is taken from the handler's most recent record. That
 # is the convention the CE panels already use for their handler attributes.
+#
+# The Biennial Report panels carry a second coordinate pair beside this block,
+# HD_CYCLE_LATITUDE and HD_CYCLE_LONGITUDE, and the names say which is which.
+# The CYCLE pair is facility-year: it comes through hd_attr_map and the
+# dominance rules below, holds what the governing record itself resolved to, and
+# moves between cycles when the facility's records do, which is why it is the
+# only column that shows a facility relocating. The PREFERRED and ALT block is
+# facility-level and holds the best pair available whatever a given record says.
+# Most analyses want PREFERRED; one that studies relocation wants CYCLE.
 
 # The block as HD_MASTER writes it, mirroring coord_slot_cols() in the master
-# stage's 00_function.R, which is where the width is set. Panel names take the
-# HD_ prefix every other handler-master column carries.
-hd_coord_src <- c("PREFERRED_LATITUDE", "PREFERRED_LONGITUDE",
-                  "PREFERRED_COORD_SOURCE",
-                  as.vector(rbind(paste0("LATITUDE_",     2:5),
-                                  paste0("LONGITUDE_",    2:5),
-                                  paste0("COORD_SOURCE_", 2:5))))
-hd_coord_map <- setNames(paste0("HD_", hd_coord_src), hd_coord_src)
+# stage's 00_function.R, which is where the master's width is set. The whole
+# block is read, so that a width change on the master's side is caught by name
+# and so that the count of pairs left behind can be reported.
+hd_coord_master_slots <- 5L
+hd_coord_src <- local({
+  rest <- seq_len(hd_coord_master_slots)[-1]
+  c("PREFERRED_LATITUDE", "PREFERRED_LONGITUDE", "PREFERRED_COORD_SOURCE",
+    as.vector(rbind(paste0("ALT_LATITUDE_",     rest),
+                    paste0("ALT_LONGITUDE_",    rest),
+                    paste0("ALT_COORD_SOURCE_", rest))))
+})
 
-# One coordinate block per handler, for the handlers given. A slot column the
-# master does not hold is a change to the master's slot width rather than a
-# missing value, so it stops the build and says which name went missing.
+# How many of those slots the panels carry, and the panel name of each. Panel
+# names take the HD_ prefix every other handler-master column carries.
+hd_coord_slots <- 2L
+hd_coord_kept  <- local({
+  rest <- seq_len(hd_coord_slots)[-1]
+  c("PREFERRED_LATITUDE", "PREFERRED_LONGITUDE", "PREFERRED_COORD_SOURCE",
+    as.vector(rbind(paste0("ALT_LATITUDE_",     rest),
+                    paste0("ALT_LONGITUDE_",    rest),
+                    paste0("ALT_COORD_SOURCE_", rest))))
+})
+hd_coord_map <- setNames(paste0("HD_", hd_coord_kept), hd_coord_kept)
+
+# The slot-source columns the panels leave behind, used only for the count in
+# the message below.
+hd_coord_dropped_src <- setdiff(grep("^ALT_COORD_SOURCE_", hd_coord_src, value = TRUE),
+                                hd_coord_kept)
+
+# One coordinate block per handler, for the handlers given, cut to the slots the
+# panels carry. A slot column the master does not hold is a change to the
+# master's slot width rather than a missing value, so it stops the build and
+# says which name went missing.
 read_hd_coordinates <- function(ids,
                                 hd_file = "output/modular_master_files/HD_MASTER.csv") {
   header <- names(read_csv(hd_file, n_max = 0, show_col_types = FALSE,
@@ -300,9 +341,9 @@ read_hd_coordinates <- function(ids,
     stop("Coordinate slot column(s) missing from ", hd_file, ": ",
          paste(missing_cols, collapse = ", "))
 
-  read_csv(hd_file, col_types = cols(.default = "c"), show_col_types = FALSE,
-           col_select = c(HANDLER_ID, SOURCE_TYPE, SEQ_NUMBER, RECEIVE_DATE,
-                          all_of(hd_coord_src))) |>
+  block <- read_csv(hd_file, col_types = cols(.default = "c"), show_col_types = FALSE,
+                    col_select = c(HANDLER_ID, SOURCE_TYPE, SEQ_NUMBER, RECEIVE_DATE,
+                                   all_of(hd_coord_src))) |>
     filter(HANDLER_ID %in% ids) |>
     # The master repeats each source record across its dimension cross, and the
     # block is constant within a source record, so the cross collapses here.
@@ -314,15 +355,26 @@ read_hd_coordinates <- function(ids,
             desc(suppressWarnings(as.integer(SEQ_NUMBER))), SOURCE_TYPE) |>
     group_by(HANDLER_ID) |>
     slice(1) |>
-    ungroup() |>
-    select(HANDLER_ID, all_of(hd_coord_src)) |>
-    rename_with(\(x) unname(hd_coord_map[x]), all_of(hd_coord_src))
+    ungroup()
+
+  # Say what the two slots leave in the master rather than letting the cut pass
+  # for completeness. A facility counted here holds a third or later pair that
+  # only HD_MASTER.csv carries.
+  beyond <- rowSums(!is.na(block[hd_coord_dropped_src])) > 0
+  message("Coordinate slots: ", nrow(block), " of ", length(ids),
+          " facilities carry a block, cut to ", hd_coord_slots, " of ",
+          hd_coord_master_slots, " slots; ", sum(beyond),
+          " hold a further pair that stays in the master")
+
+  block |>
+    select(HANDLER_ID, all_of(hd_coord_kept)) |>
+    rename_with(\(x) unname(hd_coord_map[x]), all_of(hd_coord_kept))
 }
 
 # Final HD_* block order in the written panel (after the BR_* columns).
 hd_order <- c(
   "HD_ACTIVITY_STATE", "HD_LOCATION_STATE", "HD_LOCATION_COUNTY", "HD_EPA_REGION",
-  "HD_LOCATION_LATITUDE", "HD_LOCATION_LONGITUDE",
+  "HD_CYCLE_LATITUDE", "HD_CYCLE_LONGITUDE",
   unname(hd_coord_map),
   "NAICS4", "NAICS6_1", "NAICS6_2", "NAICS6_3", "NAICS6_4", "HD_RECORD_COUNT",
   "HD_GENERATOR", "HD_STATE_GENERATOR", "HD_SHORT_TERM_GENERATOR",

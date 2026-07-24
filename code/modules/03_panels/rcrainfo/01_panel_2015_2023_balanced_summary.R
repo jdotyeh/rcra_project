@@ -36,15 +36,14 @@ N <- nrow(p)
 
 # Numeric variables to describe with min/median/max and quantiles.
 num_vars <- c("BR_GENERATE_TONS", "BR_MANAGE_TONS", "BR_SHIP_TONS", "BR_RECEIVE_TONS",
-              "HD_RECORD_COUNT", "HD_LOCATION_LATITUDE", "HD_LOCATION_LONGITUDE",
+              "HD_RECORD_COUNT", "HD_CYCLE_LATITUDE", "HD_CYCLE_LONGITUDE",
               "HD_PREFERRED_LATITUDE", "HD_PREFERRED_LONGITUDE")
 
 # Every low/medium-cardinality categorical to enumerate in full.
 cat_vars <- c("REPORT_CYCLE", "BR_GENERATOR", "BR_TSDF",
               # The coordinate slot sources, which is where the count of
               # facilities carrying an alternate pair at all can be read off.
-              "HD_PREFERRED_COORD_SOURCE", "HD_COORD_SOURCE_2",
-              "HD_COORD_SOURCE_3", "HD_COORD_SOURCE_4", "HD_COORD_SOURCE_5",
+              "HD_PREFERRED_COORD_SOURCE", "HD_ALT_COORD_SOURCE_2",
               "HD_EPA_REGION", "HD_ACTIVITY_STATE", "HD_LOCATION_STATE",
               "HD_GENERATOR", "HD_STATE_GENERATOR", "HD_SHORT_TERM_GENERATOR",
               "HD_TSDF", "HD_RECYCLER_STORAGE", "HD_RECYCLER_NONSTORAGE",

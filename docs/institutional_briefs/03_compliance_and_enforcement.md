@@ -29,7 +29,7 @@ state paired with a suborganization such as a compliance division.
 ## Implications for the data
 
 The Compliance Monitoring and Enforcement master file in
-`code/modules/02_modular_master_files/` is the source for two of the panels. ==The
+`code/modules/02_modular_master_files/` is the source for three of the panels. ==The
 evaluation panel counts evaluations by type for each handler and month from
 January 2015 through December 2023,== and it carries indicators for whether a
 violation was found along with attributes such as whether the review was prompted
@@ -38,7 +38,11 @@ and whether it fell outside Subtitle C. The enforcement panel counts actions for
 the same handlers and months and splits them by the issuing agency into state and
 federal, and it distinguishes the nationally defined enforcement-type codes from
 the ones left undefined, alongside the docket, responsible staff, disposition, and
-related fields.
+related fields. The violation panel counts the violations determined in each
+handler-month, splits them by the determining agency and by the area of the rules
+they fall in, and counts the ones still open, and it carries the regulatory
+citations behind them, which are the subject of the
+[regulatory citations](14_regulatory_citations.md) brief.
 
 @@The split between state and federal action is only meaningful in light of how
 authority is divided,@@ so the [state authorization brief](04_state_authorization.md)

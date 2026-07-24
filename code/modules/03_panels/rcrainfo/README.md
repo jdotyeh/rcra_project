@@ -74,9 +74,25 @@ monitoring and enforcement panels read it for one thing only, which is the
 coordinate slot block that all five panels carry under the same names. That
 block is facility-level rather than facility-year or facility-month, so it is
 attached on the identifier alone in the same way `FRS_ID` is, and it is taken
-from the facility's most recent handler record. What the block holds and how its
+from the facility's most recent handler record. The panels carry two slots of
+it, the preferred pair and the first alternate, where the master keeps five:
+the second slot is where a disagreement a reader would act on actually sits,
+and the deeper slots are further copies of the same site at a different
+precision. `read_hd_coordinates()` reports how many facilities hold a pair it
+left in the master. What the block holds and how its
 slots are ranked is documented in the
-[02_modular_master_files README](../../02_modular_master_files/rcrainfo/README.md#coordinate-slots). The enforcement panel also reads
+[02_modular_master_files README](../../02_modular_master_files/rcrainfo/README.md#coordinate-slots).
+
+The Biennial Report panels carry a second coordinate pair,
+`HD_CYCLE_LATITUDE` and `HD_CYCLE_LONGITUDE`, and the two families are named for
+what separates them. The cycle pair is facility-year, resolved by the same
+dominance rules as the other handler attributes, and holds what the governing
+record itself resolved to, so it moves between cycles when the facility's
+records do. The `HD_PREFERRED_` and `HD_ALT_` block is facility-level and holds
+the best pair available for the facility whatever a given record says, so it is
+constant across the facility's rows. An analysis that wants one location per
+facility takes the preferred pair; one that wants to see a facility relocate
+takes the cycle pair. The enforcement panel also reads
 `resources/CE-Enforcement-Type.md` and
 `resources/CE-Enforcement-Type-Crosswalk.md`. Each panel is written under `output/panels/` in
 a subfolder, and every panel carries its own decision record beside it

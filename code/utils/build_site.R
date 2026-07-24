@@ -11,7 +11,7 @@
 #           (docs/state-reporting.html only on an explicit forced run)
 # AUTHOR:   Jason Ye
 # CREATED:  2026-07-16
-# UPDATED:  2026-07-20
+# UPDATED:  2026-07-22
 # =============================================================================
 
 # Build the public project website into docs/ (published by GitHub Pages).
@@ -59,7 +59,7 @@ STATS <- list(
   c("4",     "EPA data sources"),
   c("7",     "RCRAInfo modules"),
   c("12",    "Biennial cycles"),
-  c("4",     "Facility panels"),
+  c("5",     "Facility panels"),
   c("~45",   "GB, reproducible"))
 
 STAGES <- list(
@@ -68,7 +68,7 @@ STAGES <- list(
   c("02", "Master files",
     "One analysis-ready CSV per module, each central table joined to its dimension tables with identifiers preserved verbatim and indicators recoded to 1/0."),
   c("03", "Panels",
-    "Facility panels built from the master files and the Biennial Report, each linked to EPA Facility Registry Service IDs."),
+    "Five facility panels built from the master files and the Biennial Report, two facility-cycle and three facility-month, each linked to EPA Facility Registry Service IDs and carrying FRS coordinates."),
   c("04", "Summary tables",
     "Every coded, dated, numeric, and indicator field of every module master file summarized variable by variable: categorical frequencies, quantitative ranges, and 1/0 indicators."))
 
@@ -102,7 +102,7 @@ SOURCES <- list(
 CARDS <- list(
   list(title = "Institutional briefs",
        desc  = "What the hazardous-waste program is and how each rule shapes the records, one brief per topic, each ending in what it implies for the data.",
-       href  = "briefs.html", meta = "11 briefs"),
+       href  = "briefs.html", meta = "15 briefs"),
   list(title = "Modular summary tables",
        desc  = "Every summarizable field of the seven RCRAInfo module master files, described variable by variable.",
        href  = "summary_tables/modular.html", meta = "7 modules"),
@@ -113,8 +113,8 @@ CARDS <- list(
        desc  = "How each state runs hazardous-waste reporting: system, requirements, and state-specific waste codes.",
        href  = "state-reporting.html", meta = "reference"),
   list(title = "Facility panels",
-       desc  = "Balanced and unbalanced LQG / TSDF facility-cycle panels, plus facility-month compliance-evaluation and enforcement panels (2015-2023).",
-       href  = paste0(REPO, "/tree/main/code/modules/03_panels"), meta = "4 panels / code"))
+       desc  = "Balanced and unbalanced LQG / TSDF facility-cycle panels, plus facility-month compliance-evaluation, enforcement, and determined-violation panels (2015-2023).",
+       href  = paste0(REPO, "/tree/main/code/modules/03_panels"), meta = "5 panels / code"))
 
 # ---- tiny HTML helpers -------------------------------------------------------
 esc <- function(x) {
@@ -336,7 +336,15 @@ BRIEFS <- list(
   c("09_facility_identifiers",     "Facility identifiers",
     "The several identifiers one physical site carries, and the crosswalk that joins them."),
   c("10_epa_forms",                "The three EPA forms",
-    "Where the records come from, and which Biennial Report fields EPA computes rather than collects."))
+    "Where the records come from, and which Biennial Report fields EPA computes rather than collects."),
+  c("11_manifests_and_shipment_tracking", "Manifests and shipment tracking",
+    "The document that follows each shipment of waste, and why the national electronic record of it only begins in 2018."),
+  c("12_waste_codes_and_management_methods", "Waste codes and management methods",
+    "The vocabulary the records use for what a waste is, where it came from, and what was done with it."),
+  c("13_universal_waste_used_oil_and_recycling", "Universal waste, used oil, and recycling",
+    "The lighter regimes that sit inside the program, and the facility roles they put into the panels."),
+  c("14_regulatory_citations",     "Regulatory citations",
+    "How a violation points at the requirement it rests on, and why the state share of that record says less."))
 
 brief_title <- function(stem) {
   hit <- Filter(function(b) identical(b[1], stem), BRIEFS)

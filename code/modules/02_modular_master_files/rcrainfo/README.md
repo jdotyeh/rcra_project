@@ -161,12 +161,16 @@ see what else the file knows reads on. `add_coordinate_slots()` builds the block
 and overwrites none of the three columns above.
 
 The first slot is `PREFERRED_LATITUDE`, `PREFERRED_LONGITUDE`, and
-`PREFERRED_COORD_SOURCE`, and the alternates are numbered from two as
-`LATITUDE_2`, `LONGITUDE_2`, `COORD_SOURCE_2` and so on. The block is a fixed
-five slots wide whether or not the data fills it, so the master's columns do not
-move between runs; `coord_slot_cols()` names the block for both the builder and
-the master's `select()`, and the run message reports the deepest slot the data
-actually reached, which is what the width should be set from.
+`PREFERRED_COORD_SOURCE`, and the alternates carry an `ALT_` stem and are
+numbered from two as `ALT_LATITUDE_2`, `ALT_LONGITUDE_2`, `ALT_COORD_SOURCE_2`
+and so on. The stem is there because the master also holds `LOCATION_LATITUDE`
+and `LOCATION_LONGITUDE`, which are the record's own resolved pair rather than a
+slot, and a bare `LATITUDE_2` beside them reads as a second location column
+rather than as a ranked alternative. The block is a fixed five slots wide
+whether or not the data fills it, so the master's columns do not move between
+runs; `coord_slot_cols()` names the block for both the builder and the master's
+`select()`, and the run message reports the deepest slot the data actually
+reached, which is what the width should be set from.
 
 The ranking is a preference order over sources rather than a set of admission
 rules, because a slot claims only that a pair exists and says where it came
@@ -315,7 +319,7 @@ coordinate at all.
 
 The two Biennial Report panels inherit the corrected coordinates, and their
 facility-year coverage moves with it. A panel facility-year counts as covered
-when both `HD_LOCATION_LATITUDE` and `HD_LOCATION_LONGITUDE` are present.
+when both `HD_CYCLE_LATITUDE` and `HD_CYCLE_LONGITUDE` are present.
 
 | Panel | Before the override | After it |
 |-------|---------------------|----------|

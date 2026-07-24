@@ -1,3 +1,9 @@
+# This repository commits code, documentation, and a small set of derived
+# outputs. Everything downloaded, everything rebuilt by the code, and everything
+# personal to one machine stays out. GitHub refuses any file over 100 MB and
+# warns over 50 MB, so the rules below are written to keep the raw data and the
+# large derived files out by default rather than by enumeration.
+
 # macOS
 .DS_Store
 .AppleDouble
@@ -12,11 +18,25 @@ Icon
 .VolumeIcon.icns
 .com.apple.timemachine.donotpresent
 
+# Windows, for anyone cloning on one
+Thumbs.db
+ehthumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# Editors and IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
 # R
 .Rhistory
 .Rapp.history
 .RData
 .RDataTmp
+.Rdata
 .Ruserdata
 *.Rproj.user/
 .Rproj.user/
@@ -32,6 +52,17 @@ vignettes/*.pdf
 *.knit.md
 rsconnect/
 .Renviron
+
+# Credentials and machine-local settings. Nothing in this project needs a
+# secret, so these are a guard rather than a description of what is here.
+.env
+.env.*
+*.pem
+*.p12
+*.pfx
+*.key
+.claude/settings.local.json
+.claude/worktrees/
 
 # R Markdown / Quarto rendered output
 *.html
@@ -52,52 +83,58 @@ rsconnect/
 !code/modules/02_modular_master_files/rcrainfo/README.md
 
 # The "*_files/" rule also matches output/modular_master_files/. Re-include the
-# folder and its README, but keep the large master CSVs out of version control.
+# folder and its README; the master CSVs themselves are excluded below.
 !output/modular_master_files/
 !output/modular_master_files/README.md
-output/modular_master_files/*.csv
 
-# Large files
-# Ignore the bulk raw data but keep each folder's hand-written README so the
-# documentation travels with the repository.
-data/echo_rcra/*
-!data/echo_rcra/README.md
-data/rcrainfo/*
-!data/rcrainfo/README.md
-data/echo_rcra_pipeline/*
-!data/echo_rcra_pipeline/README.md
-data/tri/*
-!data/tri/README.md
-data/nei/*
-!data/nei/README.md
-data/dmr/*
-!data/dmr/README.md
-data/ghgrp/*
-!data/ghgrp/README.md
-data/egrid/*
-!data/egrid/README.md
-data/frs/*
-!data/frs/README.md
-# Panel outputs: keep the small BR panels, the summaries, and all panel READMEs,
-# but drop the large compliance and enforcement panel CSVs. The .rds panel files
-# are excluded by the global "*.rds" rule below.
-output/panels/CE_PANEL_2015_2023/*.csv
+# Raw data (about 40 GB). Every file under data/ is downloaded by the code, so
+# the whole tree is excluded and only the hand-written README of each folder is
+# kept, which lets the documentation travel with the repository. The rule is
+# written as a sweep rather than one line per source so that a source added
+# later is excluded from the start.
+data/**
+!data/**/
+!data/**/README.md
+
+# Derived outputs. The bulk formats under output/ are rebuilt by the code, so
+# they are excluded by default and the few small artifacts meant to travel with
+# the repository are named back in. A panel added later is therefore excluded
+# until it is deliberately re-included here.
+output/**/*.csv
+output/**/*.tsv
+!output/panels/BR_PANEL_2015_2023_BALANCED/BR_PANEL_2015_2023_BALANCED.csv
+!output/panels/BR_PANEL_2015_2023_UNBALANCED/BR_PANEL_2015_2023_UNBALANCED.csv
+!output/panels/summary/*.csv
+
+# Binary and archive formats, wherever they appear. The summary workbooks
+# (output/summary_tables/*.xlsx) and the committed PDFs and images are not
+# matched by any of these.
 *.zip
 *.tar
 *.gz
+*.tgz
+*.bz2
+*.xz
 *.7z
 *.rar
 *.parquet
 *.feather
 *.rds
+*.Rds
+*.RDS
 *.rda
 *.sqlite
 *.sqlite3
 *.db
 *.csv.gz
-data/raw/
+*.log
 
 # Public project site (built by code/utils/build_site.R, published from /docs by
 # GitHub Pages). Re-included past the "*.html" rule above so the pages commit.
 !docs/
 !docs/**
+# The re-include above also overrides the macOS and archive rules inside docs/,
+# so the junk those rules exist for is excluded again here.
+docs/**/.DS_Store
+docs/.DS_Store
+docs/**/*.zip

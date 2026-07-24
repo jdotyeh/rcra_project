@@ -65,11 +65,14 @@
 #                        hand-placed pair, else the FRS pair, else the pair the
 #                        record reported, else a pair another record of the same
 #                        handler reported ("MANUAL", "FRS", "HD", "HD_OTHER").
-#     HD_LATITUDE_2-5, HD_LONGITUDE_2-5, HD_COORD_SOURCE_2-5
-#                        The pairs the preference order set aside, so a facility
-#                        whose sources disagree can be seen to. Empty where the
-#                        facility has no further pair. The ranking is documented
-#                        in the 02_modular_master_files README.
+#     HD_ALT_LATITUDE_2, HD_ALT_LONGITUDE_2, HD_ALT_COORD_SOURCE_2
+#                        The first pair the preference order set aside, so a
+#                        facility whose sources disagree can be seen to. Empty
+#                        where the facility has no second pair. HD_MASTER holds
+#                        five slots and the panels carry two of them; a facility
+#                        with a third pair keeps it only in the master. The
+#                        ranking is documented in the 02_modular_master_files
+#                        README.
 #
 #   Violation fields (month level; empty when the month has no violation; 68.3%
 #   of active months hold more than one violation, a far denser cell than in the

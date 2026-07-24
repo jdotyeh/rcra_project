@@ -60,7 +60,7 @@ Two companion panels share this folder, are drawn from the same source, and cove
 
 ### Decision 5. Facility Attributes ###
 - **Decision**
-    - Four facility-level attributes are taken from the facility snapshot columns that ride on the evaluation records, fixed at one value per facility, and repeated across all 108 of its months. A fifteen-column coordinate slot block is taken from `HD_MASTER.csv` on the same terms, one block per facility repeated across its months, and it is the only thing this panel takes from the Handler master.
+    - Four facility-level attributes are taken from the facility snapshot columns that ride on the evaluation records, fixed at one value per facility, and repeated across all 108 of its months. A six-column coordinate slot block is taken from `HD_MASTER.csv` on the same terms, one block per facility repeated across its months, and it is the only thing this panel takes from the Handler master.
 
       | Element | Source variable | Description |
       | --- | --- | --- |
@@ -69,16 +69,16 @@ Two companion panels share this folder, are drawn from the same source, and cove
       | `CE_EPA_REGION` | `REGION` | EPA region in which the facility is located. |
       | `CE_LAND_TYPE` | `LAND_TYPE` | Current ownership status of the land on which the facility is located. |
 
-      Coordinate slots, from `HD_MASTER.csv` rather than from `CE_MASTER.csv`, which is why they keep the `HD_` prefix. The Handler master ranks every coordinate pair available for a facility, and the block is taken whole from the facility's most recent handler record. The ranking, the source codes, and the reason a pair can appear in one slot and not another are documented in the [Handler master module README](../../../code/modules/02_modular_master_files/rcrainfo/README.md#coordinate-slots). The same block, under the same names, is carried by all five panels.
+      Coordinate slots, from `HD_MASTER.csv` rather than from `CE_MASTER.csv`, which is why they keep the `HD_` prefix. The Handler master ranks every coordinate pair available for a facility and keeps five of them; the panel carries the first two, taken from the facility's most recent handler record. A facility with a third pair keeps it in the master alone, and the run message reports how many facilities that is. The ranking, the source codes, and the reason a pair can appear in one slot and not another are documented in the [Handler master module README](../../../code/modules/02_modular_master_files/rcrainfo/README.md#coordinate-slots). The same block, under the same names, is carried by all five panels.
 
       | Element | Source variable | Description |
       | --- | --- | --- |
       | `HD_PREFERRED_LATITUDE` | `PREFERRED_LATITUDE` | Latitude of the pair to use for the facility, in decimal degrees. |
       | `HD_PREFERRED_LONGITUDE` | `PREFERRED_LONGITUDE` | Longitude of the pair to use for the facility, in decimal degrees. |
       | `HD_PREFERRED_COORD_SOURCE` | `PREFERRED_COORD_SOURCE` | Where that pair came from, namely `MANUAL` for a hand-placed pair, `FRS` for the Facility Registry Service pair, `HD` for the pair the facility reported, and `HD_OTHER` for a pair on another of the facility's records. |
-      | `HD_LATITUDE_2`-`HD_LATITUDE_5` | `LATITUDE_2`-`LATITUDE_5` | Latitudes of the pairs the preference order set aside, empty where the facility has no further pair. |
-      | `HD_LONGITUDE_2`-`HD_LONGITUDE_5` | `LONGITUDE_2`-`LONGITUDE_5` | Longitudes of those pairs. |
-      | `HD_COORD_SOURCE_2`-`HD_COORD_SOURCE_5` | `COORD_SOURCE_2`-`COORD_SOURCE_5` | Where each of those pairs came from, on the same four codes. |
+      | `HD_ALT_LATITUDE_2` | `ALT_LATITUDE_2` | Latitude of the first pair the preference order set aside, empty where the facility has no second pair. |
+      | `HD_ALT_LONGITUDE_2` | `ALT_LONGITUDE_2` | Longitude of that pair. |
+      | `HD_ALT_COORD_SOURCE_2` | `ALT_COORD_SOURCE_2` | Where that pair came from, on the same four codes. |
 
 - **Details**
     - The coordinate block is the panel's only geography beyond the state and region codes above, since the evaluation records carry no coordinates of their own. A facility whose block is empty is one that no source can place, and those facilities are listed for a manual search in `HD_COORDINATE_MANUAL_REVIEW.csv`. Slot coverage on this panel is measured on the next rebuild and recorded here then, since the block is new to this schema.

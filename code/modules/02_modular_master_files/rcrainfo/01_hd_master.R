@@ -66,7 +66,7 @@
 # PREFERRED_COORD_SOURCE hold the pair to use, which is the hand-placed pair
 # where one exists, otherwise the FRS pair whenever the handler resolves to one,
 # otherwise the pair the record itself reports if it is valid, otherwise a pair
-# another record of the same handler reports. LATITUDE_2 onwards hold the pairs
+# another record of the same handler reports. ALT_LATITUDE_2 onwards hold the pairs
 # the preference order set aside, so a facility whose sources disagree can be
 # seen to. A pair that repeats one already in a higher slot takes no slot of its
 # own. The order and its reasoning are documented above add_coordinate_slots().
